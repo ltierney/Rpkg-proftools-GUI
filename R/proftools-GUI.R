@@ -132,7 +132,7 @@ offspringFunSum <- function(path, self.gc) {
     return(offspringDF)
 }
 
-startWidget <- function(pd, value = c("pct", "time", "hits"),
+startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
                         self = FALSE, srclines = TRUE, gc = TRUE,
                         maxdepth = 10, treeType="funSum"){
     options(guiToolkit="tcltk")
@@ -152,8 +152,8 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                  error = function(e) srcAnnotate <<- NULL,
                  warning = function(w){srcAnnotate <<- NULL})
         buttonCont <- ggroup(container=group)
-        passedList <- list(pd=pd, value=value, self=self, srclines=srclines, gc=gc,
-                           maxdepth=maxdepth, srcAnnotate=srcAnnotate, 
+        passedList <- list(pd=pd, value=value, self=self, srclines=srclines, 
+                           gc=gc, maxdepth=maxdepth, srcAnnotate=srcAnnotate, 
                            treeType=treeType, win=win, group=group)
         gbutton("Function Summary", handler = FunSumView, action = passedList, 
                 container = buttonCont)
@@ -161,7 +161,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                 container = buttonCont)
         glabel("Units: ", container=buttonCont)
         units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
-                  handler=unitsHandler, action=passedList)
+                           handler=unitsHandler, action=passedList)
         size(units) <- c(50, -1)
         checkBox <- gcheckboxgroup(c("self", "gc"), checked=c(self,gc), 
                                    container=buttonCont, horizontal=T,
@@ -181,7 +181,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     browseStack <- function(h, ...){
         stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
                              list("Stack files"=list(patterns=c("*.out", "*.txt"))))
-        pd <- readPD(stackBrowse)
+        pd <- readProfileData(stackBrowse)
         stopIfEmpty(pd, group)
         delete(win, group)
         processWidget(pd, value, self, srclines, gc, maxdepth, treeType, win)
@@ -194,7 +194,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
         source(sourceBrowse)
         Rprof(NULL)
-        pd <- readPD(tmp)
+        pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         delete(win, group)
         processWidget(filterProfileData(pd,"source",focus=T), value, self,
@@ -232,7 +232,7 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
         source(tmp1)
         Rprof(NULL)
-        pd <- readPD(tmp)
+        pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         delete(win, group)
         dispose(codeWindow)
