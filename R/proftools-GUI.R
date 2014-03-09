@@ -135,7 +135,6 @@ offspringFunSum <- function(path, self.gc) {
 startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
                         self = FALSE, srclines = TRUE, gc = TRUE,
                         maxdepth = 10, treeType="funSum"){
-    options(guiToolkit="tcltk")
     win <- gwindow("Hot Path Tree", height=700, width=1000)
     ## Remove widgetMenu from previous session
     if(exists("widgetMenu")) 
