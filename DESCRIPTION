@@ -1,4 +1,4 @@
-Package: proftools-GUI
+Package: proftoolsGUI
 Type: Package
 Title: A Graphical User Interface for Examining R Profile Output
 Version: 1.0
