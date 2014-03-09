@@ -1,0 +1,9 @@
+Package: proftools-GUI
+Type: Package
+Title: Proftools GUI
+Version: 1.0
+Date: 2014-03-07
+Author: Luke Tierney and Riad Jarjour
+Maintainer: Luke Tierney <luke-tierney@uiowa.edu>
+Description: Provides a GUI for the proftools package
+License: GPL

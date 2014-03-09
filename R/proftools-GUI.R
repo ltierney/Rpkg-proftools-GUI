@@ -1,0 +1,497 @@
+
+offspring <- function(path, self.gc) {
+    DF <- offspringData
+    if(length(path) > 0){
+        pathLength <- length(path)
+        path <- paste(path, collapse=" -> ")
+        offspringDF <- DF[path == sapply(strsplit(DF$path, " -> "), 
+                                       function(x){ if(length(x) > pathLength)
+                                                        x <- x[1:pathLength]
+                                                    paste(x, collapse=" -> ")}),]
+        sonsDepth <- offspringDF$depth[1]+1
+        sons <- which(offspringDF$depth==sonsDepth)
+        if(sons[length(sons)] == nrow(offspringDF))
+            nextDepths <- c(offspringDF$depth[sons[-length(sons)]+1], 0)
+        else nextDepths <- offspringDF$depth[sons+1]
+        haveSons <- (nextDepths > offspringDF$depth[sons])
+        offspringDF <- data.frame(FunctionN=offspringDF$name[sons], 
+                                  haveSons=haveSons, 
+                                  total=offspringDF$total[sons], 
+                                  self=offspringDF$self[sons],
+                                  GC=offspringDF$GC[sons],
+                                  GC.Self=offspringDF$GC.Self[sons], 
+                                  stringsAsFactors=FALSE)
+    }    
+    else{ 
+        foundingFathers <- which(DF$depth==1)
+        if(foundingFathers[length(foundingFathers)] == nrow(DF))
+            nextDepths <- c(DF$depth[foundingFathers[-length(foundingFathers)]+1]
+                            , 0)
+        else nextDepths <- DF$depth[foundingFathers+1]
+        haveSons <- (nextDepths > DF$depth[foundingFathers])
+        offspringDF <- data.frame(FunctionN=DF$name[foundingFathers], 
+                                  haveSons=haveSons, 
+                                  total=DF$total[foundingFathers], 
+                                  self=DF$self[foundingFathers],
+                                  GC=DF$GC[foundingFathers],
+                                  GC.Self=DF$GC.Self[foundingFathers], 
+                                  stringsAsFactors=FALSE)
+    }
+    if(!self.gc[1]) {
+        offspringDF$self = NULL
+        offspringDF$GC.Self = NULL
+    }
+    if(!self.gc[2]) {
+        offspringDF$GC = NULL
+        offspringDF$GC.Self = NULL
+    }
+    return(offspringDF)
+}
+
+setOffspringDF <- function(pd, value = c("pct", "time", "hits"),
+                           self = FALSE, srclines = TRUE, gc = TRUE,
+                           maxdepth = 10){
+    pathData <- hotPaths(pd, value, self, srclines, gc, maxdepth, short = "-> ")
+    x <- strsplit(pathData$path, "-> ")
+    ## Plugs function names into paths and gets depth of each line
+    y <- sapply(1:length(x), 
+                function(i) {
+                    x[[i]][length(x[[i]])] <<- sub("^(.+?) *$", "\\1", 
+                                                   x[[i]][length(x[[i]])])
+                    if(length(x[[i]])>1)
+                        x[[i]][1:length(x[[i]])-1] <<- x[[i-1]][1:length(x[[i]])-1]
+                    c(paste(x[[i]], collapse=" -> "), x[[i]][length(x[[i]])], 
+                      length(x[[i]]))
+                }
+          )
+    pathData <- fixSumDF(pathData, self, gc, value)
+    ## Reason for global assignment is tcltk toolkit has problems passing the 
+    ## dataframe to get children of foundingFathers
+    offspringData <<- data.frame(path=as.character(y[1,]), name=y[2,], 
+                                 depth=as.numeric(y[3,]), 
+                                 total=pathData$total, self=pathData$self,
+                                 GC=pathData$gc, GC.Self=pathData$gcself,
+                                 stringsAsFactors = F)
+}
+
+fixSumDF <- function(DF, self, gc, value){
+    names(DF) <- sub(paste(".", value[1], sep=""), "", names(DF), fixed=T)
+    if(!gc){
+        DF$gc <- rep("", nrow(DF))
+        DF$gcself <- rep("", nrow(DF))
+    }
+    if(!self){
+        DF$self <- rep("", nrow(DF))
+        DF$gcself <- rep("", nrow(DF))
+    }
+    DF
+}
+
+offspringFunSum <- function(path, self.gc) {
+    if(length(path) > 0){
+        fcnName <- path[length(path)]
+        fcn <- paste(" ", fcnName, " ->", sep="")
+        calledFcns <- grep(fcn, row.names(callSum), fixed=TRUE)
+        calledFcns <- callSum[calledFcns,]
+        splitFcns <- unlist(strsplit(row.names(calledFcns), "-> ", fixed=T))
+        calledFcnsNames <- splitFcns[seq(2,length(splitFcns), by=2)]
+        calledFcnsSrch <- paste(" ", calledFcnsNames, " ->", sep="")
+        haveSons <- sapply(calledFcnsSrch, 
+                           function(x) { any(grepl(x, row.names(callSum),
+                                             fixed=TRUE)) })
+        offspringDF <- data.frame(Function = calledFcnsNames, 
+                                  haveSons = haveSons, 
+                                  total=calledFcns$total, 
+                                  self=calledFcns$self,
+                                  GC=calledFcns$gc,
+                                  GC.Self=calledFcns$gcself, 
+                                  stringsAsFactors=FALSE)
+    }    
+    else{ 
+        foundingFathers <- row.names(fcnSummary)
+        foundingFathersSrch <- paste(" ", foundingFathers, " ->", sep="")
+        haveSons <- sapply(foundingFathersSrch, 
+                           function(x) { any(grepl(x, row.names(callSum),
+                                             fixed=TRUE)) })       
+        offspringDF <- data.frame(Function = foundingFathers, 
+                                  haveSons = haveSons, 
+                                  total=fcnSummary$total, 
+                                  self=fcnSummary$self,
+                                  GC=fcnSummary$gc,
+                                  GC.Self=fcnSummary$gcself,
+                                  stringsAsFactors=FALSE)
+    }
+    if(!self.gc[1]) {
+        offspringDF$self = NULL
+        offspringDF$GC.Self = NULL
+    }
+    if(!self.gc[2]) {
+        offspringDF$GC = NULL
+        offspringDF$GC.Self = NULL
+    }
+    return(offspringDF)
+}
+
+startWidget <- function(pd, value = c("pct", "time", "hits"),
+                        self = FALSE, srclines = TRUE, gc = TRUE,
+                        maxdepth = 10, treeType="funSum"){
+    options(guiToolkit="tcltk")
+    win <- gwindow("Hot Path Tree", height=700, width=1000)
+    ## Remove widgetMenu from previous session
+    if(exists("widgetMenu")) 
+        remove(widgetMenu, pos=.GlobalEnv)
+    processWidget(pd, value, self, srclines, gc, maxdepth, treeType, win)
+}
+
+processWidget <- function(pd, value = c("pct", "time", "hits"),
+                          self = FALSE, srclines = TRUE, gc = TRUE,
+                          maxdepth = 10, treeType="funSum", win){
+    group <- ggroup(horizontal=FALSE,container=win)
+    if(!is.null(pd)){       
+        tryCatch(srcAnnotate <- annotateSource(pd, value, gc, show=FALSE), 
+                 error = function(e) srcAnnotate <<- NULL,
+                 warning = function(w){srcAnnotate <<- NULL})
+        buttonCont <- ggroup(container=group)
+        passedList <- list(pd=pd, value=value, self=self, srclines=srclines, gc=gc,
+                           maxdepth=maxdepth, srcAnnotate=srcAnnotate, 
+                           treeType=treeType, win=win, group=group)
+        gbutton("Function Summary", handler = FunSumView, action = passedList, 
+                container = buttonCont)
+        gbutton("Hot Paths", handler = hotPathsView, action = passedList,
+                container = buttonCont)
+        glabel("Units: ", container=buttonCont)
+        units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
+                  handler=unitsHandler, action=passedList)
+        size(units) <- c(50, -1)
+        checkBox <- gcheckboxgroup(c("self", "gc"), checked=c(self,gc), 
+                                   container=buttonCont, horizontal=T,
+                                   handler=checkHandler, action=passedList)
+        if(treeType=="funSum")
+            funSumTree(pd, value, self, srclines, gc, srcAnnotate, win, group)
+        else
+            hotPathsTree(pd, value, self, srclines, gc, maxdepth, srcAnnotate,
+                         win, group)
+    }
+    addMenu(pd, value, self, srclines, gc, maxdepth, treeType, win, group)
+}
+
+addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
+                    srclines = TRUE, gc = TRUE, maxdepth=10, treeType, 
+                    win, group){
+    browseStack <- function(h, ...){
+        stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
+                             list("Stack files"=list(patterns=c("*.out", "*.txt"))))
+        pd <- readPD(stackBrowse)
+        stopIfEmpty(pd, group)
+        delete(win, group)
+        processWidget(pd, value, self, srclines, gc, maxdepth, treeType, win)
+    }
+    
+    browseR <- function(h, ...){
+        sourceBrowse <- gfile("Source and profile an R file", quote=FALSE,
+                              filter = list("Stack files"=
+                                            list(patterns=c("*.R", "*.txt"))))
+        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
+        source(sourceBrowse)
+        Rprof(NULL)
+        pd <- readPD(tmp)
+        stopIfEmpty(pd, group)
+        delete(win, group)
+        processWidget(filterProfileData(pd,"source",focus=T), value, self,
+                      srclines, gc, maxdepth, treeType, win)
+        unlink(tmp)
+    }    
+    profileRCode <- function(h, ...){
+        profileCode(pd, value, self, srclines, gc, maxdepth, treeType, win, group)
+    }    
+    mn <- list(); mn$File <- list();
+    mn$File[['Select a stack file']] <- gaction("Select a stack file", 
+                                                handler=browseStack) 
+    mn$File[['Source an R file']] <- gaction("Source an R file", handler=browseR)   
+    mn$File[['Profile some R code']] <- gaction("Profile some R code", 
+                                                handler=profileRCode) 
+    if(exists("widgetMenu"))
+        svalue(widgetMenu) <<- mn
+    else
+        widgetMenu <<- gmenu(mn, container=win)
+}
+
+profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
+                        srclines = TRUE, gc = TRUE, maxdepth=10, treeType, 
+                        win, group){
+    codeWindow <- gwindow("Profile R code", width=500, height=500)
+    codeGroup <- ggroup(horizontal=FALSE,container=codeWindow)
+    profileText <- gtext("## Enter some R code here to profile", 
+                         container=codeGroup, wrap=FALSE, 
+                         font.attr=list(family="monospace"), expand=TRUE, 
+                         fill="both")
+    btn <- gbutton("Profile It", container=codeGroup)
+    addHandlerChanged(btn, handler = function(h, ...) {
+        tmp1 <- paste(tempfile(), ".R", sep="")
+        write(svalue(profileText), file=tmp1)
+        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
+        source(tmp1)
+        Rprof(NULL)
+        pd <- readPD(tmp)
+        stopIfEmpty(pd, group)
+        delete(win, group)
+        dispose(codeWindow)
+        processWidget(filterProfileData(pd, "source", focus=T), value, self,
+                      srclines, gc, maxdepth, treeType, win)
+        unlink(tmp)
+    })
+}
+# Give an error message if stack file is empty
+stopIfEmpty <- function(pd, group){
+    if(pd$total == 0){
+        gmessage('Your code produced a stack file of zero lines', title = "Error", 
+                 icon = "error", parent=group)
+        stop('Your code produced a stack file of zero lines')         
+    }
+}
+
+funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
+                       srclines = TRUE, gc = TRUE, srcAnnotate, win, group){
+    treeType <- "funSum"
+    callSum <- callSummary(pd, byTotal = TRUE, value, srclines, gc)
+    row.names(callSum) <- paste(" ", row.names(callSum), sep="")
+    callSum <<- fixSumDF(callSum, self, gc, value)
+    fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
+    fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
+    treeCont <- gframe(text="Function Summary", container=group, expand=TRUE, 
+                       fill="both")
+    fcnAnnotCont <- gframe(text="Function Annotations", container=group, 
+                           expand=TRUE, fill="both")
+    tree <- gtree(offspring=offspringFunSum, offspring.data = c(self,gc),
+                  container=treeCont, expand=TRUE, fill="both")
+    fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
+                      font.attr=list(family="monospace"), expand=TRUE, 
+                      fill="both")
+    addHandler(tree, fcnAnnot, treeType, srcAnnotate, pd)
+}
+
+FunSumView <- function(h, ...){
+    delete(h$action$win, h$action$group)
+    processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines,
+                  h$action$gc, h$action$maxdepth, "funSum", h$action$win)
+}
+
+hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
+                         srclines = TRUE, gc = TRUE, maxdepth = 10, srcAnnotate,
+                         win, group){
+    treeType <- "hotPaths"
+    setOffspringDF(pd, value, self, srclines, gc, maxdepth)
+    treeCont <- gframe(text="Hot Paths", container=group, expand=TRUE, 
+                       fill="both")
+    fcnAnnotCont <- gframe(text="Function Annotations", container=group, 
+                           expand=TRUE, fill="both")
+    tree <- gtree(offspring = offspring, offspring.data = c(self,gc), 
+                  container=treeCont, expand=TRUE, fill="both")
+    fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
+                      font.attr=list(family="monospace"), expand=TRUE, 
+                      fill="both")
+    addHandler(tree, fcnAnnot, treeType, srcAnnotate, pd)
+}
+
+hotPathsView <- function(h, ...){
+    delete(h$action$win, h$action$group)
+    processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines,
+              h$action$gc, h$action$maxdepth, "hotPaths", h$action$win)
+}
+
+parseOffspring <- function(path, id=NULL){
+    offspringDF <- offspring(path, c(TRUE,TRUE))
+    id <- paste(id,1:nrow(offspringDF),sep="")
+    paste(sapply(1:nrow(offspringDF), parseSon, offspringDF, path, id), 
+          collapse=",")
+}
+
+parseSon <- function(i, offspringDF, path, id){
+    x <- paste("{\"id\":\"", id[i], "\",\"name\":\"", offspringDF$Function[i],
+    "\",\"total\":\"", offspringDF$total[i], "\",\"self\":\"",
+    offspringDF$self[i], "\",\"GC\":\"", offspringDF$GC[i], "\",\"GCself\":\"",
+    offspringDF$GC.Self[i], "\"", sep="")
+    if(offspringDF$haveSons[i]) 
+        x <- paste(x, ",\"children\":[", 
+                   parseOffspring(c(path,as.character(offspringDF$Function[i])),
+                   id[i]),"]}")
+    else
+        x <- paste(x,"}")
+    x
+}
+
+generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
+                         self = FALSE, srclines = TRUE, gc = TRUE,
+                         maxdepth = 10){
+    setOffspringDF(pd, value, self, srclines, gc, maxdepth)
+    write(c("[",parseOffspring(c()),"]"), paste(path, "/www/test.JSON", 
+                                                sep="")) 
+}
+
+runShiny <- function(pd, path, value = c("pct", "time", "hits"),
+                     self = FALSE, srclines = TRUE, gc = TRUE,
+                     maxdepth = 10){
+    srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
+    cols <- c("<th field=\"self\" width=\"150\">Self</th>",
+              "<th field=\"GC\" width=\"150\">GC</th>",
+              "<th field=\"GCself\" width=\"150\">GC.Self</th>")
+    if(!gc)
+        cols[2:3] <- ""
+    if(!self)
+        cols[c(1,3)] <- ""
+    index <- readLines(paste(path, "/www/index.html", sep=""))
+    index[67:69] <- cols
+    write(index,paste(path, "/www/index.html", sep=""))
+    generateJSON(pd, path, value, self, srclines, gc, maxdepth)
+    runApp(path)
+}
+outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'){
+    if(is.null(fcnAnnot))
+        if(is.null(font.attr))
+            cat('<br />', paste(output, collapse='<br />'), sep='')
+        else
+            cat('<br />', paste('<span class="red">', 
+                                paste(output, collapse='<br />'),
+                                '</span>',sep=''), sep='')
+    else
+        insert(fcnAnnot, output, font.attr = font.attr, where = where)
+}
+# annotName is the name along with possible line info, fcnName strips those
+functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName, 
+                             lineNumber, treeType, fcnAnnot){
+    if(is.null(srcAnnotate)) {
+        outputAnnot("R file could not be found in the working directory", fcnAnnot)
+        return()
+    }
+    fcnAnnotate <- functionAnnotation(fcnName, srcAnnotate, fileName, lineNumber,
+                                      fcnAnnot)
+    # Can't find function annotation or code, try the same for its first child                                  
+    if(is.null(fcnAnnotate)){
+        if(treeType=="hotPaths")
+            siblingsDF <- offspring(path[-length(path)],c(TRUE,TRUE)) 
+        else siblingsDF <- offspringFunSum(path[-length(path)],c(TRUE,TRUE))
+        fcnDF <- siblingsDF[siblingsDF$Function==annotName,]
+        if(fcnDF$haveSons){
+            if(treeType=="hotPaths")
+                sonsDF <- offspring(path,c(TRUE,TRUE))
+            else sonsDF <- offspringFunSum(path,c(TRUE,TRUE))
+            for(i in 1:nrow(sonsDF)){
+                fcnInfo <- parseLineInfo(as.character(sonsDF$Function[i]),
+                                         srcAnnotate)
+                fcnAnnotate <- unlist(lapply(fcnInfo$fcnName, functionAnnotation,
+                                             srcAnnotate, fcnInfo$fileName, 
+                                             fcnInfo$lineNumber, fcnAnnot))
+                if(!is.null(fcnAnnotate)){
+                    return(invisible(TRUE))
+                }    
+            }
+            outputAnnot("Selected Function has no available annotations", fcnAnnot)
+        }
+        else
+            outputAnnot("Selected Function has no available annotations", fcnAnnot)
+    }
+}
+functionAnnotation <- function(fcnName, srcAnnotate, fileName, lineNumber, 
+                               fcnAnnot){
+    if(length(fileName)){
+        x <- srcAnnotate[[fileName]][lineNumber]
+        fileEnd <- length(srcAnnotate[[fileName]])
+        ends <- min(lineNumber+7, fileEnd)
+        if(lineNumber != 1)
+            outputAnnot(srcAnnotate[[fileName]][1:(lineNumber-1)],fcnAnnot)
+        outputAnnot(srcAnnotate[[fileName]][lineNumber], fcnAnnot, 
+                    font.attr=list(color="red"))
+        if(lineNumber != ends)
+            outputAnnot(srcAnnotate[[fileName]][(lineNumber+1):ends], fcnAnnot)
+        if(ends != fileEnd)
+            outputAnnot(srcAnnotate[[fileName]][(ends+1):fileEnd], 
+                        fcnAnnot=fcnAnnot, where="at.cursor")
+        return(TRUE)
+    }
+    else{
+        unlist(lapply(srcAnnotate, findFunction, fcnName, fcnAnnot))
+    }
+}
+
+findFunction <- function(srcCode, fcnName, fcnAnnot){
+    defineFcns <- grep("function", srcCode, fixed=T)
+    haveFcn <- grep(paste("[[:blank:]]+", 
+                          sub(".", "\\.", fcnName, fixed=T), 
+                          "[[:blank:]]*(<-|=)[[:blank:]]*function", 
+                          sep=""), srcCode[defineFcns])
+    if(length(haveFcn)){
+        x <- srcCode[defineFcns[haveFcn]]
+        lineNumber <- defineFcns[haveFcn]
+        fileEnd <- length(srcCode)
+        ends <- min(lineNumber+7, fileEnd)
+        if(lineNumber != 1)
+            outputAnnot(srcCode[1:(lineNumber-1)], fcnAnnot)
+        outputAnnot(srcCode[lineNumber], fcnAnnot, 
+                    font.attr=list(color="red"))
+        if(lineNumber != ends)
+            outputAnnot(srcCode[(lineNumber+1):ends], fcnAnnot)
+        if(ends != fileEnd)
+            outputAnnot(srcCode[(ends+1):fileEnd], fcnAnnot=fcnAnnot,
+                        where="at.cursor")
+        return(TRUE)
+    }
+    else
+        NULL
+}
+parseLineInfo <- function(fcnName, srcAnnotate){
+    hasLine <- regexpr("(", fcnName, fixed=T)
+    if(hasLine[1]>0){
+        lineProf <- unlist(strsplit(substr(fcnName, hasLine[1]+1, 
+                                           nchar(fcnName)-1), ":", fixed=T))
+        fileName <- lineProf[1]
+        fileName <- grep(fileName, names(srcAnnotate), value=TRUE, fixed=TRUE)
+        lineNumber <- as.numeric(lineProf[2])
+        fcnName <- substr(fcnName, 1, hasLine[1]-2)
+    }
+    else{
+        fileName <- lineNumber <- NULL
+    }
+    list(fcnName=fcnName,lineNumber=lineNumber,fileName=fileName)
+}
+
+addHandler <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
+    addHandlerClicked(tree, handler=function(h,...) {
+        fcnAnnot <- h$action
+        path <- svalue(h$obj, drop=FALSE)
+        annotName <- path[length(path)]
+        parseLine <- parseLineInfo(annotName, srcAnnotate)
+        fcnNameRClick <<- parseLine$fcnName
+        svalue(fcnAnnot) <- ''
+        functionAnnotate(parseLine$fcnName, annotName, path, 
+                         srcAnnotate, parseLine$fileName, 
+                         parseLine$lineNumber, treeType, fcnAnnot)
+    }, action=fcnAnnot)
+    ml <- list()
+    ml[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
+        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        plotProfileCallGraph(filtered)
+    })
+    ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
+        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        calleeTreeMap(filtered)
+    })    
+    ml[['Plot Flamegraph']] <- gaction('Plot Flamegraph', handler=function(h,...){
+        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        flameGraph(filtered, order="hot")
+    })    
+    add3rdmousePopupMenu(tree,menulist=ml)
+}
+
+unitsHandler <- function(h, ...){
+    value <- svalue(h$obj)
+    delete(h$action$win, h$action$group)
+    processWidget(h$action$pd, value, h$action$self, h$action$srclines, 
+                  h$action$gc, h$action$maxdepth, h$action$treeType, h$action$win)
+}
+checkHandler <- function(h, ...){
+    self.gc <- c("self", "gc") %in% svalue(h$obj)
+    delete(h$action$win, h$action$group)
+    processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
+                  self.gc[2], h$action$maxdepth, h$action$treeType, h$action$win)
+}
+# Always keep an empty final line or annotateSource will break
