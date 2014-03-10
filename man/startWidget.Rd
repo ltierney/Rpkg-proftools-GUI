@@ -77,19 +77,31 @@ annotation will be shown because the widget can't find the source files.
 \code{\link{funSummary}}
 }
 \examples{
+library(proftools)
 library(gWidgets2)
 library(gWidgets2RGtk2)
 
-## Only launch the widget menu
+
+## Only launch the widget menu, proceed from there
 startWidget(NULL)
 
-## Source annotations for below examples are not shown since source files 
+
+## Source annotations for the below example are not shown since source files 
 ## are not in the working directory
-pd <- readProfileData(system.file("samples", "Rprof-lmfit-new.out", 
+pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
                                   package="proftools"))
 startWidget(pd)
 
+## We can fix that by temporarily changing the working directory
+## to the samples directory in the proftools package
+oldDir <- getwd()
+setwd(system.file("samples", package="proftools"))
+pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
+                                  package="proftools"))
+startWidget(pd)
+setwd(oldDir)
 
+## A couple of other examples
 pd <- readProfileData(system.file("samples", "Rprof-rec.out", 
                                   package="proftools"))
 startWidget(pd)
