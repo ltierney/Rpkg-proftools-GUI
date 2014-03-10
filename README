@@ -1,6 +1,7 @@
 A Graphical User Interface for Examining R Profile Output
 =========================================================
 
+
 This package provides a GUI for the proftools package. The main widget 
 features include call trees, function summaries and source annotations.
 The widget is interactive, giving the user the capability to alter viewing 
@@ -10,12 +11,14 @@ Note: This package requires the proftools and gWidgets2 packages. It also
 requires one of gWidgets2RGtk2 or gWidgets2tcltk packages to be used as the 
 underlying toolkit, with gWidgets2RGtk2 being preferred.
 
+
 EXPORTED FUNCTIONS
 
 The package exports one function:
 
     startWidget launches a GUI widget with interactive profiling tools for 
         Rprof output, .R files, and R code.
+        
         
 A SIMPLE EXAMPLE
 
@@ -26,7 +29,19 @@ Read in the profile data for the example in the proftools package
         startWidget(pd)
 
 Alternatively, just launch the widget and use the file menu to browse 
-and select the stack file
+and select the stack file. You can alter viewing options from witing the 
+widget rather than specifying the arguments when calling the function.
 
         startWidget(NULL)
-                                          
+        
+Note that source annotations are not shown. This is because the source 
+filenames given in Rprof-rec.out cannot be found in the working directory. 
+We can fix this by temporarily changing the working directory to the samples 
+directory in the proftools package.
+
+        oldDir <- getwd()
+        setwd(system.file("samples", package="proftools"))
+        pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
+                                          package="proftools"))
+        startWidget(pd)
+        setwd(oldDir)
