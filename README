@@ -22,8 +22,14 @@ The package exports one function:
         
 A SIMPLE EXAMPLE
 
-Read in the profile data for the example in the proftools package
+Load required packages
 
+        library(proftools)
+        library(gWidgets2)
+        library(gWidgets2RGtk2)
+
+Read in the profile data for the example in the proftools package
+        
         pd <- readProfileData(system.file("samples", "Rprof-rec.out",
                                           package="proftools"))
         startWidget(pd)
