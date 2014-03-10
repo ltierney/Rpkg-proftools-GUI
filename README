@@ -50,4 +50,8 @@ directory in the proftools package.
         pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
                                           package="proftools"))
         startWidget(pd)
+        
+When done working with the widget, change the working directory back to the 
+original one.
+
         setwd(oldDir)

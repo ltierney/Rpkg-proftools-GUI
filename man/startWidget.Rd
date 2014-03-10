@@ -99,7 +99,10 @@ setwd(system.file("samples", package="proftools"))
 pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
                                   package="proftools"))
 startWidget(pd)
+
+## When done, change back the working directory
 setwd(oldDir)
+
 
 ## A couple of other examples
 pd <- readProfileData(system.file("samples", "Rprof-rec.out", 
