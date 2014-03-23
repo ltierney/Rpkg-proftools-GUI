@@ -10,7 +10,8 @@ Launches a GUI widget with interactive profiling tools for Rprof output,
 }
 \usage{
 startWidget(pd = NULL, value = c("pct", "time", "hits"), self = FALSE, 
-            srclines = TRUE, gc = TRUE, maxdepth = 10, treeType = "funSum")
+            srclines = TRUE, gc = TRUE, maxdepth = 10, treeType = "funSum", 
+            toolkit = "RGtk2")
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -36,6 +37,9 @@ startWidget(pd = NULL, value = c("pct", "time", "hits"), self = FALSE,
   \item{treeType}{
  "funSum" gives function summary view listing all functions, while "hotPaths" 
 gives the Hot Paths view.
+}
+  \item{toolkit}{
+ Underlying toolkit to use. Can be either "RGtk2" (recommended) or "tcltk". 
 }
 }
 \details{
