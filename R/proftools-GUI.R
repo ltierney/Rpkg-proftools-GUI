@@ -170,6 +170,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         else
             hotPathsTree(pd, value, self, srclines, gc, maxdepth, srcAnnotate,
                          win, group)
+        update(win)
     }
     addMenu(pd, value, self, srclines, gc, maxdepth, treeType, win, group)
 }
