@@ -77,6 +77,9 @@ annotation will be shown because the widget can't find the source files.
 \code{\link{funSummary}}
 }
 \examples{
+
+\dontrun{
+
 library(proftools)
 library(gWidgets2)
 library(gWidgets2RGtk2)
@@ -112,6 +115,7 @@ startWidget(pd)
 pd <- readProfileData(system.file("samples", "Rprof-rec1.out", 
                                   package="proftools"))
 startWidget(pd)
+}
 }
 \keyword{profiling}
 \keyword{programming}
