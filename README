@@ -55,3 +55,8 @@ When done working with the widget, change the working directory back to the
 original one.
 
         setwd(oldDir)
+        
+Thanks
+
+Thanks to Professor John Verzani for answering questions about his colorful 
+package gWidgets2.
