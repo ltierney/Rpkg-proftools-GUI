@@ -459,6 +459,8 @@ addHandler <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
     addHandlerClicked(tree, handler=function(h,...) {
         fcnAnnot <- h$action
         path <- svalue(h$obj, drop=FALSE)
+        if(length(path) == 0)
+            return(FALSE)
         annotName <- path[length(path)]
         parseLine <- parseLineInfo(annotName, srcAnnotate)
         fcnNameRClick <<- parseLine$fcnName
