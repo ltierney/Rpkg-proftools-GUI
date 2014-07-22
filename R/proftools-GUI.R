@@ -134,26 +134,25 @@ offspringFunSum <- function(path, self.gc) {
 
 startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
                         self = FALSE, srclines = TRUE, gc = TRUE,
-                        maxdepth = 10, treeType="funSum", toolkit="RGtk2"){
+                        maxdepth = 10, interval = NULL,
+                        treeType="funSum", toolkit="RGtk2"){
     options(guiToolkit = toolkit)
     win <- gwindow("Hot Path Tree", height=700, width=1000)
     ## Remove widgetMenu from previous session
     if(exists("widgetMenu")) 
         remove(widgetMenu, pos=.GlobalEnv)
-    processWidget(pd, value, self, srclines, gc, maxdepth, treeType, win)
+    processWidget(pd, value, self, srclines, gc, maxdepth, interval, treeType,
+                  win)
 }
 
 processWidget <- function(pd, value = c("pct", "time", "hits"),
                           self = FALSE, srclines = TRUE, gc = TRUE,
-                          maxdepth = 10, treeType="funSum", win){
+                          maxdepth = 10, interval, treeType="funSum", win){
     group <- ggroup(horizontal=FALSE,container=win)
-    if(!is.null(pd)){       
-        tryCatch(srcAnnotate <- annotateSource(pd, value, gc, show=FALSE), 
-                 error = function(e) srcAnnotate <<- NULL,
-                 warning = function(w){srcAnnotate <<- NULL})
+    if(!is.null(pd)){
         buttonCont <- ggroup(container=group)
         passedList <- list(pd=pd, value=value, self=self, srclines=srclines, 
-                           gc=gc, maxdepth=maxdepth, srcAnnotate=srcAnnotate, 
+                           gc=gc, maxdepth=maxdepth, interval=interval,
                            treeType=treeType, win=win, group=group)
         gbutton("Function Summary", handler = FunSumView, action = passedList, 
                 container = buttonCont)
@@ -166,18 +165,57 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         checkBox <- gcheckboxgroup(c("self", "gc"), checked=c(self,gc), 
                                    container=buttonCont, horizontal=T,
                                    handler=checkHandler, action=passedList)
+        addSlider(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
+        if(!is.null(interval))
+            filteredPD <- timeSubsetPD(pd, interval)
+        else filteredPD <- pd
+        tryCatch(srcAnnotate <- annotateSource(filteredPD, value, gc, show=FALSE), 
+                 error = function(e) srcAnnotate <<- NULL,
+                 warning = function(w){srcAnnotate <<- NULL})        
         if(treeType=="funSum")
-            funSumTree(pd, value, self, srclines, gc, srcAnnotate, win, group)
+            funSumTree(filteredPD, value, self, srclines, gc, srcAnnotate, win, group)
         else
-            hotPathsTree(pd, value, self, srclines, gc, maxdepth, srcAnnotate,
+            hotPathsTree(filteredPD, value, self, srclines, gc, maxdepth, srcAnnotate,
                          win, group)
         update(win)
     }
-    addMenu(pd, value, self, srclines, gc, maxdepth, treeType, win, group)
+    addMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
 }
 
+addSlider <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
+                      srclines = TRUE, gc = TRUE, maxdepth=10, interval, 
+                      treeType, win, group){
+    if(is.null(interval)) interval <- c(1, pd$total)
+    sliderCont <- gframe(text = "Filter Selection", container=group, 
+                         horizontal = FALSE)
+    s1Cont <- ggroup(container=sliderCont)
+    s2Cont <- ggroup(container=sliderCont)
+    glabel("Start: ", container=s1Cont)
+    glabel("Stop: ", container=s2Cont)
+    s1Handler <- function(h, ...){
+        if(svalue(s1) > svalue(s2))
+            svalue(s1) <- svalue(s2)
+        interval <<- c(svalue(s1), svalue(s2))
+    }
+    s2Handler <- function(h, ...){
+        if(svalue(s2) < svalue(s1))
+            svalue(s2) <- svalue(s1)
+        interval <<- c(svalue(s1), svalue(s2))
+    }
+    filterSelection <- function(h, ...){
+        delete(win, group)
+        processWidget(pd, value, self, srclines, gc, maxdepth, 
+                      interval, treeType, win)
+    }
+    s1 <- gslider(from=1, to=pd$total, by=1, value=interval[1], 
+                  handler = s1Handler, cont=s1Cont)
+    s2 <- gslider(from=1, to=pd$total, by=1, value=interval[2], 
+                  handler = s2Handler, cont=s2Cont)
+    gbutton("Filter Selection", handler = filterSelection, 
+            container = sliderCont)    
+}
 addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                    srclines = TRUE, gc = TRUE, maxdepth=10, treeType, 
+                    srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
                     win, group){
     browseStack <- function(h, ...){
         stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
@@ -185,7 +223,8 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         pd <- readProfileData(stackBrowse)
         stopIfEmpty(pd, group)
         delete(win, group)
-        processWidget(pd, value, self, srclines, gc, maxdepth, treeType, win)
+        processWidget(pd, value, self, srclines, gc, maxdepth, interval, 
+                      treeType, win)
     }
     
     browseR <- function(h, ...){
@@ -199,11 +238,11 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         stopIfEmpty(pd, group)
         delete(win, group)
         processWidget(filterProfileData(pd,"source",focus=T), value, self,
-                      srclines, gc, maxdepth, treeType, win)
+                      srclines, gc, maxdepth, interval, treeType, win)
         unlink(tmp)
     }    
     profileRCode <- function(h, ...){
-        profileCode(pd, value, self, srclines, gc, maxdepth, treeType, win, group)
+        profileCode(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
     }    
     mn <- list(); mn$File <- list();
     mn$File[['Select a stack file']] <- gaction("Select a stack file", 
@@ -238,7 +277,7 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         delete(win, group)
         dispose(codeWindow)
         processWidget(filterProfileData(pd, "source", focus=T), value, self,
-                      srclines, gc, maxdepth, treeType, win)
+                      srclines, gc, maxdepth, interval, treeType, win)
         unlink(tmp)
     })
 }
@@ -268,13 +307,13 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addHandler(tree, fcnAnnot, treeType, srcAnnotate, pd)
+    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd)
 }
 
 FunSumView <- function(h, ...){
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines,
-                  h$action$gc, h$action$maxdepth, "funSum", h$action$win)
+                  h$action$gc, h$action$maxdepth, h$action$interval, "funSum", h$action$win)
 }
 
 hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
@@ -291,13 +330,13 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addHandler(tree, fcnAnnot, treeType, srcAnnotate, pd)
+    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd)
 }
 
 hotPathsView <- function(h, ...){
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines,
-              h$action$gc, h$action$maxdepth, "hotPaths", h$action$win)
+              h$action$gc, h$action$maxdepth, h$action$interval, "hotPaths", h$action$win)
 }
 
 parseOffspring <- function(path, id=NULL){
@@ -455,7 +494,7 @@ parseLineInfo <- function(fcnName, srcAnnotate){
     list(fcnName=fcnName,lineNumber=lineNumber,fileName=fileName)
 }
 
-addHandler <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
+addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
     addHandlerClicked(tree, handler=function(h,...) {
         fcnAnnot <- h$action
         path <- svalue(h$obj, drop=FALSE)
@@ -489,12 +528,12 @@ unitsHandler <- function(h, ...){
     value <- svalue(h$obj)
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, value, h$action$self, h$action$srclines, 
-                  h$action$gc, h$action$maxdepth, h$action$treeType, h$action$win)
+                  h$action$gc, h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 checkHandler <- function(h, ...){
     self.gc <- c("self", "gc") %in% svalue(h$obj)
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
-                  self.gc[2], h$action$maxdepth, h$action$treeType, h$action$win)
+                  self.gc[2], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 # Always keep an empty final line or annotateSource will break
