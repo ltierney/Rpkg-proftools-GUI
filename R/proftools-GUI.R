@@ -167,7 +167,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                                    handler=checkHandler, action=passedList)
         addSlider(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
         if(!is.null(interval))
-            filteredPD <- timeSubsetPD(pd, interval)
+            filteredPD <- filterProfileData(pd, interval = interval)
         else filteredPD <- pd
         tryCatch(srcAnnotate <- annotateSource(filteredPD, value, gc, show=FALSE), 
                  error = function(e) srcAnnotate <<- NULL,
