@@ -242,7 +242,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         unlink(tmp)
     }    
     profileRCode <- function(h, ...){
-        profileCode(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
+        profileCode(pd, value, self, srclines, gc, maxdepth, NULL, treeType, win, group)
     }    
     mn <- list(); mn$File <- list();
     mn$File[['Select a stack file']] <- gaction("Select a stack file", 
@@ -257,8 +257,8 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
 }
 
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                        srclines = TRUE, gc = TRUE, maxdepth=10, treeType, 
-                        win, group){
+                        srclines = TRUE, gc = TRUE, maxdepth=10, interval,
+                        treeType, win, group){
     codeWindow <- gwindow("Profile R code", width=500, height=500)
     codeGroup <- ggroup(horizontal=FALSE,container=codeWindow)
     profileText <- gtext("## Enter some R code here to profile", 
@@ -274,11 +274,12 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         Rprof(NULL)
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
+        mydepth <- length(sys.calls())
+        pd <- skipPD(pd, mydepth+4)
         delete(win, group)
         dispose(codeWindow)
-        processWidget(filterProfileData(pd, "source", focus=T), value, self,
-                      srclines, gc, maxdepth, interval, treeType, win)
-        unlink(tmp)
+        processWidget(pd, value, self, srclines, gc, maxdepth, NULL, treeType,
+                      win)
     })
 }
 # Give an error message if stack file is empty
