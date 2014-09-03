@@ -14,7 +14,7 @@ offspring <- function(path, self.gc) {
             nextDepths <- c(offspringDF$depth[sons[-length(sons)]+1], 0)
         else nextDepths <- offspringDF$depth[sons+1]
         haveSons <- (nextDepths > offspringDF$depth[sons])
-        offspringDF <- data.frame(FunctionN=offspringDF$name[sons], 
+        offspringDF <- data.frame(Function=offspringDF$name[sons], 
                                   haveSons=haveSons, 
                                   total=offspringDF$total[sons], 
                                   self=offspringDF$self[sons],
@@ -29,7 +29,7 @@ offspring <- function(path, self.gc) {
                             , 0)
         else nextDepths <- DF$depth[foundingFathers+1]
         haveSons <- (nextDepths > DF$depth[foundingFathers])
-        offspringDF <- data.frame(FunctionN=DF$name[foundingFathers], 
+        offspringDF <- data.frame(Function=DF$name[foundingFathers], 
                                   haveSons=haveSons, 
                                   total=DF$total[foundingFathers], 
                                   self=DF$self[foundingFathers],
@@ -154,10 +154,11 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         passedList <- list(pd=pd, value=value, self=self, srclines=srclines, 
                            gc=gc, maxdepth=maxdepth, interval=interval,
                            treeType=treeType, win=win, group=group)
-        gbutton("Function Summary", handler = FunSumView, action = passedList, 
-                container = buttonCont)
-        gbutton("Hot Paths", handler = hotPathsView, action = passedList,
-                container = buttonCont)
+        glabel("Summary: ", container=buttonCont)
+        SummaryView <- ifelse(treeType == "funSum", "Function", "Hot Paths")
+        summaryCombo <- gcombobox(c(SummaryView, "Function", "Hot Paths"), container=buttonCont, 
+                                  handler=summaryHandler, action=passedList)
+        size(summaryCombo) <- c(80, -1)
         glabel("Units: ", container=buttonCont)
         units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
                            handler=unitsHandler, action=passedList)
@@ -311,12 +312,6 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd)
 }
 
-FunSumView <- function(h, ...){
-    delete(h$action$win, h$action$group)
-    processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines,
-                  h$action$gc, h$action$maxdepth, h$action$interval, "funSum", h$action$win)
-}
-
 hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                          srclines = TRUE, gc = TRUE, maxdepth = 10, srcAnnotate,
                          win, group){
@@ -332,12 +327,6 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd)
-}
-
-hotPathsView <- function(h, ...){
-    delete(h$action$win, h$action$group)
-    processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines,
-              h$action$gc, h$action$maxdepth, h$action$interval, "hotPaths", h$action$win)
 }
 
 parseOffspring <- function(path, id=NULL){
@@ -521,10 +510,19 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
     ml[['Plot Flamegraph']] <- gaction('Plot Flamegraph', handler=function(h,...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
         flameGraph(filtered, order="hot")
+    })
+    ml[['Plot Timegraph']] <- gaction('Plot Timegraph', handler=function(h,...){
+        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        flameGraph(filtered, order="time")
     })    
     add3rdmousePopupMenu(tree,menulist=ml)
 }
-
+summaryHandler <- function(h, ...){
+    summaryView <- ifelse(svalue(h$obj) == "Function", "funSum", "hotPaths")
+    delete(h$action$win, h$action$group)
+    processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines, 
+                  h$action$gc, h$action$maxdepth, h$action$interval, summaryView, h$action$win)
+}
 unitsHandler <- function(h, ...){
     value <- svalue(h$obj)
     delete(h$action$win, h$action$group)
