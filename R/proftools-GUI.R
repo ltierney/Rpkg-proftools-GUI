@@ -181,6 +181,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         update(win)
     }
     addMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
+    addPlotMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
 }
 
 addSlider <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
@@ -256,7 +257,24 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     else
         widgetMenu <<- gmenu(mn, container=win)
 }
-
+addPlotMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
+                        srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
+                        win, group){
+    mn <- list(); mn$Plot <- list();
+    mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
+        plotProfileCallGraph(pd)
+    })
+    mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
+        calleeTreeMap(pd)
+    })
+    mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
+        flameGraph(pd, order="hot")
+    })
+    mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
+        flameGraph(pd, order="time")
+    }) 
+    PlotMenu <- gmenu(mn, container=win)
+}
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                         srclines = TRUE, gc = TRUE, maxdepth=10, interval,
                         treeType, win, group){
