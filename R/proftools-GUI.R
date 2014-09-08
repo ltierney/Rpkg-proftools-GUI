@@ -141,6 +141,8 @@ startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
     ## Remove widgetMenu from previous session
     if(exists("widgetMenu")) 
         remove(widgetMenu, pos=.GlobalEnv)
+    if(exists("plotMenu")) 
+        remove(plotMenu, pos=.GlobalEnv)
     processWidget(pd, value, self, srclines, gc, maxdepth, interval, treeType,
                   win)
 }
@@ -273,7 +275,10 @@ addPlotMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
         flameGraph(pd, order="time")
     }) 
-    PlotMenu <- gmenu(mn, container=win)
+    if(exists("plotMenu"))
+        svalue(plotMenu) <<- mn
+    else
+        plotMenu <<- gmenu(mn, container=win)
 }
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                         srclines = TRUE, gc = TRUE, maxdepth=10, interval,
