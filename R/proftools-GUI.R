@@ -141,8 +141,6 @@ startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
     ## Remove widgetMenu from previous session
     if(exists("widgetMenu")) 
         remove(widgetMenu, pos=.GlobalEnv)
-    if(exists("plotMenu")) 
-        remove(plotMenu, pos=.GlobalEnv)
     processWidget(pd, value, self, srclines, gc, maxdepth, interval, treeType,
                   win)
 }
@@ -183,7 +181,6 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         update(win)
     }
     addMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
-    addPlotMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
 }
 
 addSlider <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
@@ -254,15 +251,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     mn$File[['Source an R file']] <- gaction("Source an R file", handler=browseR)   
     mn$File[['Profile some R code']] <- gaction("Profile some R code", 
                                                 handler=profileRCode) 
-    if(exists("widgetMenu"))
-        svalue(widgetMenu) <<- mn
-    else
-        widgetMenu <<- gmenu(mn, container=win)
-}
-addPlotMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                        srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
-                        win, group){
-    mn <- list(); mn$Plot <- list();
+    mn$Plot <- list();
     mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
         plotProfileCallGraph(pd)
     })
@@ -275,10 +264,10 @@ addPlotMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
         flameGraph(pd, order="time")
     }) 
-    if(exists("plotMenu"))
-        svalue(plotMenu) <<- mn
+    if(exists("widgetMenu"))
+        svalue(widgetMenu) <<- mn
     else
-        plotMenu <<- gmenu(mn, container=win)
+        widgetMenu <<- gmenu(mn, container=win)
 }
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                         srclines = TRUE, gc = TRUE, maxdepth=10, interval,
