@@ -158,7 +158,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         SummaryView <- ifelse(treeType == "funSum", "Function", "Hot Paths")
         summaryCombo <- gcombobox(c(SummaryView, "Function", "Hot Paths"), container=buttonCont, 
                                   handler=summaryHandler, action=passedList)
-        size(summaryCombo) <- c(80, -1)
+        size(summaryCombo) <- c(100, -1)
         glabel("Units: ", container=buttonCont)
         units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
                            handler=unitsHandler, action=passedList)
