@@ -251,18 +251,21 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     mn$File[['Source an R file']] <- gaction("Source an R file", handler=browseR)   
     mn$File[['Profile some R code']] <- gaction("Profile some R code", 
                                                 handler=profileRCode) 
+    if(!is.null(interval))
+        filteredPD <- filterProfileData(pd, interval = interval)
+    else filteredPD <- pd
     mn$Plot <- list();
     mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
-        plotProfileCallGraph(pd)
+        plotProfileCallGraph(filteredPD)
     })
     mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
-        calleeTreeMap(pd)
+        calleeTreeMap(filteredPD)
     })
     mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
-        flameGraph(pd, order="hot")
+        flameGraph(filteredPD, order="hot")
     })
     mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
-        flameGraph(pd, order="time")
+        flameGraph(filteredPD, order="time")
     }) 
     if(exists("widgetMenu"))
         svalue(widgetMenu) <<- mn
