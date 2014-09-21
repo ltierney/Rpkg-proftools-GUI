@@ -163,7 +163,13 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
                            handler=unitsHandler, action=passedList)
         size(units) <- c(50, -1)
-        checkBox <- gcheckboxgroup(c("self", "gc"), checked=c(self,gc), 
+        checkBoxes <- c("self", "gc"); checked=c(self,gc)
+        if(!pd$haveGC){
+            checkBoxes <- checkBoxes[-2]
+            checked <- checked[-2]
+            gc <- FALSE
+        }
+        checkBox <- gcheckboxgroup(checkBoxes, checked=checked, 
                                    container=buttonCont, horizontal=T,
                                    handler=checkHandler, action=passedList)
         addSlider(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
