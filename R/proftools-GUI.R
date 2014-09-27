@@ -180,10 +180,11 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                  error = function(e) srcAnnotate <<- NULL,
                  warning = function(w){srcAnnotate <<- NULL})        
         if(treeType=="funSum")
-            funSumTree(filteredPD, value, self, srclines, gc, srcAnnotate, win, group)
+            funSumTree(filteredPD, value, self, srclines, gc, srcAnnotate, win,
+                       group)
         else
-            hotPathsTree(filteredPD, value, self, srclines, gc, maxdepth, srcAnnotate,
-                         win, group)
+            hotPathsTree(filteredPD, value, self, srclines, gc, maxdepth, 
+                         srcAnnotate, win, group)
         update(win)
     }
     addMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
@@ -321,9 +322,10 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     callSum <<- fixSumDF(callSum, self, gc, value)
     fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
     fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
-    treeCont <- gframe(text="Function Summary", container=group, expand=TRUE, 
+    gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
+    treeCont <- gframe(text="Function Summary", container=gPane, expand=TRUE, 
                        fill="both")
-    fcnAnnotCont <- gframe(text="Function Annotations", container=group, 
+    fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
     tree <- gtree(offspring=offspringFunSum, offspring.data = c(self,gc),
                   container=treeCont, expand=TRUE, fill="both")
@@ -338,9 +340,10 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                          win, group){
     treeType <- "hotPaths"
     setOffspringDF(pd, value, self, srclines, gc, maxdepth)
-    treeCont <- gframe(text="Hot Paths", container=group, expand=TRUE, 
+    gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
+    treeCont <- gframe(text="Hot Paths", container=gPane, expand=TRUE, 
                        fill="both")
-    fcnAnnotCont <- gframe(text="Function Annotations", container=group, 
+    fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
     tree <- gtree(offspring = offspring, offspring.data = c(self,gc), 
                   container=treeCont, expand=TRUE, fill="both")
