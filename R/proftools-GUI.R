@@ -323,8 +323,9 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
     fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
-    treeCont <- gframe(text="Function Summary", container=gPane, expand=TRUE, 
-                       fill="both")
+    g <- ggroup(container=gPane)
+    treeCont <- gframe(text="Function Summary", container=g, expand=TRUE)
+    gg <- ggraphics(container=g, expand=TRUE)
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
     tree <- gtree(offspring=offspringFunSum, offspring.data = c(self,gc),
@@ -341,8 +342,10 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     treeType <- "hotPaths"
     setOffspringDF(pd, value, self, srclines, gc, maxdepth)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
-    treeCont <- gframe(text="Hot Paths", container=gPane, expand=TRUE, 
+    g <- ggroup(container=gPane)
+    treeCont <- gframe(text="Hot Paths", container=g, expand=TRUE, 
                        fill="both")
+    gg <- ggraphics(container=g, expand=TRUE)
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
     tree <- gtree(offspring = offspring, offspring.data = c(self,gc), 
