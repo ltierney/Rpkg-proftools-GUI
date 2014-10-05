@@ -204,13 +204,14 @@ addSlider <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         if(svalue(s1) > svalue(s2))
             svalue(s1) <- svalue(s2)
         interval <<- c(svalue(s1), svalue(s2))
+        delete(win, group)
+        processWidget(pd, value, self, srclines, gc, maxdepth, 
+                      interval, treeType, win)
     }
     s2Handler <- function(h, ...){
         if(svalue(s2) < svalue(s1))
             svalue(s2) <- svalue(s1)
         interval <<- c(svalue(s1), svalue(s2))
-    }
-    filterSelection <- function(h, ...){
         delete(win, group)
         processWidget(pd, value, self, srclines, gc, maxdepth, 
                       interval, treeType, win)
@@ -218,9 +219,8 @@ addSlider <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     s1 <- gslider(from=1, to=pd$total, by=1, value=interval[1], 
                   handler = s1Handler, cont=s1Cont)
     s2 <- gslider(from=1, to=pd$total, by=1, value=interval[2], 
-                  handler = s2Handler, cont=s2Cont)
-    gbutton("Filter Selection", handler = filterSelection, 
-            container = sliderCont)    
+                  handler = s2Handler, cont=s2Cont) 
+    s1$widget$setUpdatePolicy("1"); s2$widget$setUpdatePolicy("1")
 }
 addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                     srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
