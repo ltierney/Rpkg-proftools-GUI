@@ -262,17 +262,22 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         filteredPD <- filterProfileData(pd, interval = interval)
     else filteredPD <- pd
     mn$Plot <- list();
+    plotType <<- 'plotCallgraph'
     mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
         plotProfileCallGraph(filteredPD)
+        plotType <<- 'plotCallgraph'
     })
     mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
         calleeTreeMap(filteredPD)
+        plotType <<- 'plotTreemap'
     })
     mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
         flameGraph(filteredPD, order="hot")
+        plotType <<- 'plotFlamegraph'
     })
     mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
         flameGraph(filteredPD, order="time")
+        plotType <<- 'plotTimegraph'
     }) 
     if(exists("widgetMenu"))
         svalue(widgetMenu) <<- mn
@@ -323,9 +328,11 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
     fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
-    g <- ggroup(container=gPane)
+    g <- gpanedgroup(container=gPane)
     treeCont <- gframe(text="Function Summary", container=g, expand=TRUE)
     gg <- ggraphics(container=g, expand=TRUE)
+    svalue(g) <- .5
+    plotProfileCallGraph(pd)
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
     tree <- gtree(offspring=offspringFunSum, offspring.data = c(self,gc),
@@ -520,28 +527,38 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
         annotName <- path[length(path)]
         parseLine <- parseLineInfo(annotName, srcAnnotate)
         fcnNameRClick <<- parseLine$fcnName
+        do.call(plotType, list())
         svalue(fcnAnnot) <- ''
         functionAnnotate(parseLine$fcnName, annotName, path, 
                          srcAnnotate, parseLine$fileName, 
                          parseLine$lineNumber, treeType, fcnAnnot)
     }, action=fcnAnnot)
-    ml <- list()
-    ml[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
+    
+    plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
         plotProfileCallGraph(filtered)
-    })
-    ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
+        plotType <<- 'plotCallgraph'        
+    }
+    plotTreemap <- function(h, ...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
-        calleeTreeMap(filtered)
-    })    
-    ml[['Plot Flamegraph']] <- gaction('Plot Flamegraph', handler=function(h,...){
+        calleeTreeMap(filtered)    
+        plotType <<- 'plotTreemap'        
+    }
+    plotFlamegraph <- function(h, ...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
         flameGraph(filtered, order="hot")
-    })
-    ml[['Plot Timegraph']] <- gaction('Plot Timegraph', handler=function(h,...){
+        plotType <<- 'plotFlamegraph'
+    }
+    plotTimegraph <- function(h, ...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
         flameGraph(filtered, order="time")
-    })    
+        plotType <<- 'plotTimegraph'        
+    }
+    ml <- list()
+    ml[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=plotCallgraph)
+    ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=plotTimegraph)    
+    ml[['Plot Flamegraph']] <- gaction('Plot Flamegraph', handler=plotFlamegraph)
+    ml[['Plot Timegraph']] <- gaction('Plot Timegraph', handler=plotTimegraph)    
     add3rdmousePopupMenu(tree,menulist=ml)
 }
 summaryHandler <- function(h, ...){
