@@ -349,10 +349,12 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     treeType <- "hotPaths"
     setOffspringDF(pd, value, self, srclines, gc, maxdepth)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
-    g <- ggroup(container=gPane)
+    g <- gpanedgroup(container=gPane)
     treeCont <- gframe(text="Hot Paths", container=g, expand=TRUE, 
                        fill="both")
     gg <- ggraphics(container=g, expand=TRUE)
+    svalue(g) <- .5
+    plotProfileCallGraph(pd)
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
     tree <- gtree(offspring = offspring, offspring.data = c(self,gc), 
