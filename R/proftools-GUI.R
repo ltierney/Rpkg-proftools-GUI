@@ -524,11 +524,11 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
     addHandlerClicked(tree, handler=function(h,...) {
         fcnAnnot <- h$action
         path <- svalue(h$obj, drop=FALSE)
-        print(svalue(tree))
-        if(length(path) == 0)
+        if(length(path) == 0){
+            plotProfileCallGraph(pd, style = google.style)
             return(FALSE)
+        }
         annotName <- path[length(path)]
-        
         parseLine <- parseLineInfo(annotName, srcAnnotate)
         fcnNameRClick <<- parseLine$fcnName
         do.call(plotType, list())
@@ -537,9 +537,6 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
                          srcAnnotate, parseLine$fileName, 
                          parseLine$lineNumber, treeType, fcnAnnot)
     }, action=fcnAnnot)
-    addHandlerBlur(tree, handler=function(h,...) {
-        print("whatup")
-    })
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
         plotProfileCallGraph(filtered, style = google.style)
