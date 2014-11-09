@@ -188,6 +188,8 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         update(win)
     }
     addMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
+    plot.new()
+    plotProfileCallGraph(pd, style = google.style)
 }
 
 addSlider <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
@@ -264,7 +266,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     mn$Plot <- list();
     plotType <<- 'plotCallgraph'
     mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
-        plotProfileCallGraph(filteredPD)
+        plotProfileCallGraph(filteredPD, style = google.style)
         plotType <<- 'plotCallgraph'
     })
     mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
@@ -332,10 +334,9 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     treeCont <- gframe(text="Function Summary", container=g, expand=TRUE)
     gg <- ggraphics(container=g, expand=TRUE)
     svalue(g) <- .5
-    plotProfileCallGraph(pd)
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
-    tree <- gtree(offspring=offspringFunSum, offspring.data = c(self,gc),
+    tree <<- gtree(offspring=offspringFunSum, offspring.data = c(self,gc),
                   container=treeCont, expand=TRUE, fill="both")
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
@@ -354,7 +355,6 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                        fill="both")
     gg <- ggraphics(container=g, expand=TRUE)
     svalue(g) <- .5
-    plotProfileCallGraph(pd)
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
     tree <- gtree(offspring = offspring, offspring.data = c(self,gc), 
@@ -524,9 +524,11 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
     addHandlerClicked(tree, handler=function(h,...) {
         fcnAnnot <- h$action
         path <- svalue(h$obj, drop=FALSE)
+        print(svalue(tree))
         if(length(path) == 0)
             return(FALSE)
         annotName <- path[length(path)]
+        
         parseLine <- parseLineInfo(annotName, srcAnnotate)
         fcnNameRClick <<- parseLine$fcnName
         do.call(plotType, list())
@@ -535,10 +537,12 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
                          srcAnnotate, parseLine$fileName, 
                          parseLine$lineNumber, treeType, fcnAnnot)
     }, action=fcnAnnot)
-    
+    addHandlerBlur(tree, handler=function(h,...) {
+        print("whatup")
+    })
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
-        plotProfileCallGraph(filtered)
+        plotProfileCallGraph(filtered, style = google.style)
         plotType <<- 'plotCallgraph'        
     }
     plotTreemap <- function(h, ...){
