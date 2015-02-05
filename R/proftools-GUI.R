@@ -67,7 +67,7 @@ setOffspringDF <- function(pd, value = c("pct", "time", "hits"),
     pathData <- fixSumDF(pathData, self, gc, value)
     ## Reason for global assignment is tcltk toolkit has problems passing the 
     ## dataframe to get children of foundingFathers
-    offspringData <<- data.frame(path=as.character(y[1,]), name=y[2,], 
+    offspringData <<- data.frame(path=as.character(y[1,]), as.character(name=y[2,]), 
                                  depth=as.numeric(y[3,]), 
                                  total=pathData$total, self=pathData$self,
                                  GC=pathData$gc, GC.Self=pathData$gcself,
