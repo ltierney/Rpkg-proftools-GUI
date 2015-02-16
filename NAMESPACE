@@ -1,5 +1,3 @@
 export(startWidget)
 import(proftools)
 import(gWidgets2)
-import(gWidgets2RGtk2)
-import(cairoDevice)
