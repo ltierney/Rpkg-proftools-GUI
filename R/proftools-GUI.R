@@ -172,7 +172,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         checkBox <- gcheckboxgroup(checkBoxes, checked=checked, 
                                    container=buttonCont, horizontal=T,
                                    handler=checkHandler, action=passedList)
-        addSlider(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
+        addSpinners(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
         if(!is.null(interval))
             filteredPD <- filterProfileData(pd, interval = interval)
         else filteredPD <- pd
@@ -192,37 +192,37 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
     plotProfileCallGraph(pd, style = google.style)
 }
 
-addSlider <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
+addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                       srclines = TRUE, gc = TRUE, maxdepth=10, interval, 
                       treeType, win, group){
     if(is.null(interval)) interval <- c(1, pd$total)
-    sliderCont <- gframe(text = "Filter Selection", container=group, 
+    spinnerCont <- gframe(text = "Filter Selection", container=group, 
                          horizontal = FALSE)
-    s1Cont <- ggroup(container=sliderCont)
-    s2Cont <- ggroup(container=sliderCont)
+    s1Cont <- ggroup(container=spinnerCont)
+    s2Cont <- ggroup(container=spinnerCont)
     glabel("Start: ", container=s1Cont)
     glabel("Stop: ", container=s2Cont)
     s1Handler <- function(h, ...){
         if(svalue(s1) > svalue(s2))
             svalue(s1) <- svalue(s2)
         interval <<- c(svalue(s1), svalue(s2))
-        delete(win, group)
-        processWidget(pd, value, self, srclines, gc, maxdepth, 
-                      interval, treeType, win)
     }
     s2Handler <- function(h, ...){
         if(svalue(s2) < svalue(s1))
             svalue(s2) <- svalue(s1)
         interval <<- c(svalue(s1), svalue(s2))
+    }
+    filterHandler <- function(h, ...){
         delete(win, group)
         processWidget(pd, value, self, srclines, gc, maxdepth, 
                       interval, treeType, win)
-    }
-    s1 <- gslider(from=1, to=pd$total, by=1, value=interval[1], 
+    }    
+    s1 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[1], 
                   handler = s1Handler, cont=s1Cont)
-    s2 <- gslider(from=1, to=pd$total, by=1, value=interval[2], 
+    s2 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[2], 
                   handler = s2Handler, cont=s2Cont) 
-    s1$widget$setUpdatePolicy("1"); s2$widget$setUpdatePolicy("1")
+    filterButton <- gbutton("Filter Selection", handler = filterHandler, 
+                            cont=s2Cont)
 }
 addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                     srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
