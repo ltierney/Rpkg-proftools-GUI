@@ -16,7 +16,8 @@ startWidget(pd = NULL, value = c("pct", "time", "hits"), self = FALSE,
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{pd}{
- profile data as returned by \code{readProfileData}.
+ profile data as returned by \code{readProfileData} or a character
+ vector naming a profile data file.
 }
   \item{value}{
  character; show result as percentage, time, or hits.
