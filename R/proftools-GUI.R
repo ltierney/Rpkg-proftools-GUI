@@ -200,10 +200,8 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     if(is.null(interval)) interval <- c(1, pd$total)
     spinnerCont <- gframe(text = "Filter Selection", container=group, 
                          horizontal = FALSE)
-    s1Cont <- ggroup(container=spinnerCont)
-    s2Cont <- ggroup(container=spinnerCont)
-    glabel("Start: ", container=s1Cont)
-    glabel("Stop: ", container=s2Cont)
+    sCont <- ggroup(container=spinnerCont)
+    glabel("Start: ", container=sCont)
     s1Handler <- function(h, ...){
         if(svalue(s1) > svalue(s2))
             svalue(s1) <- svalue(s2)
@@ -220,11 +218,12 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                       interval, treeType, win)
     }    
     s1 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[1], 
-                  handler = s1Handler, cont=s1Cont)
+                  handler = s1Handler, cont=sCont)
+    glabel("Stop: ", container=sCont)
     s2 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[2], 
-                  handler = s2Handler, cont=s2Cont) 
+                  handler = s2Handler, cont=sCont) 
     filterButton <- gbutton("Filter Selection", handler = filterHandler, 
-                            cont=s2Cont)
+                            cont=sCont)
 }
 addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                     srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
@@ -413,7 +412,10 @@ runShiny <- function(pd, path, value = c("pct", "time", "hits"),
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
     runApp(path)
 }
+
 outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'){
+    ## Below runs only if Shiny, since fcnAnnot (which is the annotion textbox)
+    ## will be null in this case    
     if(is.null(fcnAnnot))
         if(is.null(font.attr))
             cat('<br />', paste(output, collapse='<br />'), sep='')
@@ -561,7 +563,7 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
     }
     ml <- list()
     ml[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=plotCallgraph)
-    ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=plotTimegraph)    
+    ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=plotTreemap)    
     ml[['Plot Flamegraph']] <- gaction('Plot Flamegraph', handler=plotFlamegraph)
     ml[['Plot Timegraph']] <- gaction('Plot Timegraph', handler=plotTimegraph)    
     add3rdmousePopupMenu(tree,menulist=ml)
