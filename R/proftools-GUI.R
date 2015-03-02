@@ -67,8 +67,8 @@ setOffspringDF <- function(pd, value = c("pct", "time", "hits"),
     pathData <- fixSumDF(pathData, self, gc, value)
     ## Reason for global assignment is tcltk toolkit has problems passing the 
     ## dataframe to get children of foundingFathers
-    offspringData <<- data.frame(path=as.character(y[1,]), name=as.character(y[2,]), 
-                                 depth=as.numeric(y[3,]), 
+    offspringData <<- data.frame(path=as.character(y[1,]), 
+                                 name=as.character(y[2,]), depth=as.numeric(y[3,]), 
                                  total=pathData$total, self=pathData$self,
                                  GC=pathData$gc, GC.Self=pathData$gcself,
                                  stringsAsFactors = F)
@@ -158,8 +158,9 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                            treeType=treeType, win=win, group=group)
         glabel("Summary: ", container=buttonCont)
         SummaryView <- ifelse(treeType == "funSum", "Function", "Hot Paths")
-        summaryCombo <- gcombobox(c(SummaryView, "Function", "Hot Paths"), container=buttonCont, 
-                                  handler=summaryHandler, action=passedList)
+        summaryCombo <- gcombobox(c(SummaryView, "Function", "Hot Paths"), 
+                                  container=buttonCont, handler=summaryHandler, 
+                                  action=passedList)
         size(summaryCombo) <- c(100, -1)
         glabel("Units: ", container=buttonCont)
         units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
@@ -178,9 +179,24 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         if(!is.null(interval))
             filteredPD <- filterProfileData(pd, interval = interval)
         else filteredPD <- pd
-        tryCatch(srcAnnotate <- annotateSource(filteredPD, value, gc, show=FALSE), 
-                 error = function(e) srcAnnotate <<- NULL,
-                 warning = function(w){srcAnnotate <<- NULL})        
+        attemptAnnot <- function(){
+            tryCatch(srcAnnotate <- annotateSource(filteredPD, value, gc, show=FALSE), 
+                     error = function(e) srcAnnotate <<- NULL,
+                     warning = function(w){srcAnnotate <<- NULL})
+            srcAnnotate
+        }
+        srcAnnotate <- attemptAnnot(); conf <- FALSE
+        if(is.null(srcAnnotate))
+            conf <- gconfirm(paste0('Could not find source files in the ',
+                                    'working directory, press OK to locate the', 
+                                    ' directory with source files, or Cancel',
+                                    ' to continue without source annotations.'), 
+                             title="Source files not found", icon="warning")
+        if(conf){
+            directory <- gfile(type="selectdir")
+            setwd(directory)
+            srcAnnotate <- attemptAnnot()
+        }
         if(treeType=="funSum")
             funSumTree(filteredPD, value, self, srclines, gc, srcAnnotate, win,
                        group)
