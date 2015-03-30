@@ -382,22 +382,46 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd)
 }
 
-parseOffspring <- function(path, id=NULL){
-    offspringDF <- offspring(path, c(TRUE,TRUE))
+parseOffspring <- function(path, treetype, id=NULL){
+    if(treetype == 'hotpaths') 
+        offspringDF <- offspring(path, c(TRUE,TRUE))
+    else offspringDF <- offspringFunSum(path, c(TRUE,TRUE))
     id <- paste(id,1:nrow(offspringDF),sep="")
-    paste(sapply(1:nrow(offspringDF), parseSon, offspringDF, path, id), 
+    paste(sapply(1:nrow(offspringDF), parseSon, offspringDF, path, id, treetype), 
           collapse=",")
 }
-
-parseSon <- function(i, offspringDF, path, id){
+## gets function name without line info
+getFname <- function(annotName){
+    fcnName <- annotName
+    hasLine <- regexpr("(", fcnName, fixed=T)
+    if(hasLine[1]>0)
+        fcnName <- substr(fcnName, 1, hasLine[1]-2)
+    fcnName
+}
+## Matches a vector in a sequence
+vecIn <- function(a,b){
+    which(Reduce('+', lapply(seq_along(y <- lapply(b, '==', a)), 
+                             function(x){
+                                y[[x]][x:(length(a) - length(b) +x)]
+                             })) == length(b))
+} 
+parseSon <- function(i, offspringDF, path, id, treetype){
     x <- paste("{\"id\":\"", id[i], "\",\"name\":\"", offspringDF$Function[i],
     "\",\"total\":\"", offspringDF$total[i], "\",\"self\":\"",
     offspringDF$self[i], "\",\"GC\":\"", offspringDF$GC[i], "\",\"GCself\":\"",
     offspringDF$GC.Self[i], "\"", sep="")
-    if(offspringDF$haveSons[i]) 
+    if(length(path) && (treetype == "funSum")){
+        lastTwo <- c(getFname(path[length(path)]), 
+                     getFname(as.character(offspringDF$Function[i])))
+        makeSons <- !(any(as.logical(lapply(cycles, vecIn, lastTwo)), na.rm=TRUE) 
+                          || (lastTwo[1] == lastTwo[2]))
+    }
+    else
+        makeSons <- TRUE
+    if(offspringDF$haveSons[i] && makeSons)
         x <- paste(x, ",\"children\":[", 
-                   parseOffspring(c(path,as.character(offspringDF$Function[i])),
-                   id[i]),"]}")
+                   parseOffspring(c(path, as.character(offspringDF$Function[i]))
+                                  , treetype, id[i]), "]}")
     else
         x <- paste(x,"}")
     x
@@ -407,8 +431,17 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
                          self = FALSE, srclines = TRUE, gc = TRUE,
                          maxdepth = 10){
     setOffspringDF(pd, value, self, srclines, gc, maxdepth)
-    write(c("[",parseOffspring(c()),"]"), paste(path, "/www/test.JSON", 
-                                                sep="")) 
+    callSum <- callSummary(pd, byTotal = TRUE, value, srclines, gc)
+    row.names(callSum) <- paste(" ", row.names(callSum), sep="")
+    callSum <<- fixSumDF(callSum, self, gc, value)
+    fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
+    fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
+    cycles <- cvtProfileData(pd, TRUE)$cycles
+    cycles <<- lapply(cycles, function(x) c(x, x[1]))
+    write(c("[",parseOffspring(c(), 'hotpaths'),"]"), 
+          paste(path, "/www/hotpaths.JSON", sep=""))         
+    write(c("[",parseOffspring(c(), 'funSum'),"]"), 
+          paste(path, "/www/test.JSON", sep="")) 
 }
 
 runShiny <- function(pd, path, value = c("pct", "time", "hits"),
@@ -418,13 +451,13 @@ runShiny <- function(pd, path, value = c("pct", "time", "hits"),
     cols <- c("<th field=\"self\" width=\"150\">Self</th>",
               "<th field=\"GC\" width=\"150\">GC</th>",
               "<th field=\"GCself\" width=\"150\">GC.Self</th>")
-    if(!gc)
-        cols[2:3] <- ""
-    if(!self)
-        cols[c(1,3)] <- ""
-    index <- readLines(paste(path, "/www/index.html", sep=""))
-    index[67:69] <- cols
-    write(index,paste(path, "/www/index.html", sep=""))
+    # if(!gc)
+        # cols[2:3] <- ""
+    # if(!self)
+        # cols[c(1,3)] <- ""
+    # index <- readLines(paste(path, "/www/index.html", sep=""))
+    # index[67:69] <- cols
+    # write(index,paste(path, "/www/index.html", sep=""))
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
     runApp(path)
 }
