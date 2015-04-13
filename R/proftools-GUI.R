@@ -386,7 +386,6 @@ parseOffspring <- function(path, treetype, id=NULL){
     if(treetype == 'hotpaths') 
         offspringDF <- offspring(path, c(TRUE,TRUE))
     else offspringDF <- offspringFunSum(path, c(TRUE,TRUE))
-    id <- paste(id,1:nrow(offspringDF),sep="")
     paste(sapply(1:nrow(offspringDF), parseSon, offspringDF, path, id, treetype), 
           collapse=",")
 }
@@ -406,10 +405,14 @@ vecIn <- function(a,b){
                              })) == length(b))
 } 
 parseSon <- function(i, offspringDF, path, id, treetype){
-    x <- paste("{\"id\":\"", id[i], "\",\"name\":\"", offspringDF$Function[i],
+    if(length(path)) parent <- paste0(',"_parentId":', id)
+    else parent <- NULL
+    #parentID <- substr(id[1], 1, nchar(id[1])-1)
+    newID <- paste0(length(path)+1,id,i)
+    x <- paste("{\"id\":", newID, ",\"name\":\"", offspringDF$Function[i],
     "\",\"total\":\"", offspringDF$total[i], "\",\"self\":\"",
     offspringDF$self[i], "\",\"GC\":\"", offspringDF$GC[i], "\",\"GCself\":\"",
-    offspringDF$GC.Self[i], "\"", sep="")
+    offspringDF$GC.Self[i], "\"", parent, sep="")
     if(length(path) && (treetype == "funSum")){
         lastTwo <- c(getFname(path[length(path)]), 
                      getFname(as.character(offspringDF$Function[i])))
@@ -419,9 +422,9 @@ parseSon <- function(i, offspringDF, path, id, treetype){
     else
         makeSons <- TRUE
     if(offspringDF$haveSons[i] && makeSons)
-        x <- paste(x, ",\"children\":[", 
+        x <- paste(x, "},",
                    parseOffspring(c(path, as.character(offspringDF$Function[i]))
-                                  , treetype, id[i]), "]}")
+                                  , treetype, newID))
     else
         x <- paste(x,"}")
     x
@@ -438,9 +441,9 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
     fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
     cycles <- cvtProfileData(pd, TRUE)$cycles
     cycles <<- lapply(cycles, function(x) c(x, x[1]))
-    write(c("[",parseOffspring(c(), 'hotpaths'),"]"), 
+    write(c("{\"rows\":[",parseOffspring(c(), 'hotpaths'),"]}"), 
           paste(path, "/www/hotpaths.JSON", sep=""))         
-    write(c("[",parseOffspring(c(), 'funSum'),"]"), 
+    write(c("{\"rows\":[",parseOffspring(c(), 'funSum'),"]}"), 
           paste(path, "/www/test.JSON", sep="")) 
 }
 
