@@ -481,6 +481,8 @@ outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'
 # annotName is the name along with possible line info, fcnName strips those
 functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName, 
                              lineNumber, treeType, fcnAnnot){
+    ## fileName used in Shiny
+    fileName <<- NULL
     if(is.null(srcAnnotate)) {
         outputAnnot("R file could not be found in the working directory", fcnAnnot)
         return()
@@ -488,7 +490,7 @@ functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName,
     fcnAnnotate <- functionAnnotation(fcnName, srcAnnotate, fileName, lineNumber,
                                       fcnAnnot)
     # Can't find function annotation or code, try the same for its first child                                  
-    if(is.null(fcnAnnotate)){
+    if(is.null(fcnAnnotate) && (length(path) > 1)){
         if(treeType=="hotPaths")
             siblingsDF <- offspring(path[-length(path)],c(TRUE,TRUE)) 
         else siblingsDF <- offspringFunSum(path[-length(path)],c(TRUE,TRUE))
@@ -531,11 +533,12 @@ functionAnnotation <- function(fcnName, srcAnnotate, fileName, lineNumber,
         return(TRUE)
     }
     else{
-        unlist(lapply(srcAnnotate, findFunction, fcnName, fcnAnnot))
+        unlist(lapply(seq_along(srcAnnotate), findFunction, fcnName, fcnAnnot))
     }
 }
 
-findFunction <- function(srcCode, fcnName, fcnAnnot){
+findFunction <- function(i, fcnName, fcnAnnot){
+    srcCode <- srcAnnotate[[i]]
     defineFcns <- grep("function", srcCode, fixed=T)
     haveFcn <- grep(paste("[[:blank:]]+", 
                           sub(".", "\\.", fcnName, fixed=T), 
@@ -555,6 +558,8 @@ findFunction <- function(srcCode, fcnName, fcnAnnot){
         if(ends != fileEnd)
             outputAnnot(srcCode[(ends+1):fileEnd], fcnAnnot=fcnAnnot,
                         where="at.cursor")
+        ## fileName used in Shiny
+        fileName <<- names(srcAnnotate)[i]
         return(TRUE)
     }
     else
