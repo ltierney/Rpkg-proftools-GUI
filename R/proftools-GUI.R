@@ -447,7 +447,7 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
           paste(path, "/www/test.JSON", sep="")) 
 }
 
-runShiny <- function(pd, path, value = c("pct", "time", "hits"),
+runShiny <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, gc = TRUE,
                      maxdepth = 10){
     srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
@@ -461,6 +461,7 @@ runShiny <- function(pd, path, value = c("pct", "time", "hits"),
     # index <- readLines(paste(path, "/www/index.html", sep=""))
     # index[67:69] <- cols
     # write(index,paste(path, "/www/index.html", sep=""))
+	path <- system.file("appdir", package="proftoolsGUI")
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
     runApp(path)
 }

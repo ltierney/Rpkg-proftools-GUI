@@ -1,3 +1,4 @@
 export(startWidget)
+export(runShiny)
 import(proftools)
 import(gWidgets2)
