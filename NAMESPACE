@@ -1,5 +1,6 @@
 export(startWidget)
 export(runShiny)
 export(parseLineInfo)
+export(functionAnnotate)
 import(proftools)
 import(gWidgets2)
