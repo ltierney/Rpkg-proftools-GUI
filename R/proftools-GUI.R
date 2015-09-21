@@ -462,6 +462,7 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     # index[67:69] <- cols
     # write(index,paste(path, "/www/index.html", sep=""))
 	path <- system.file("appdir", package="proftoolsGUI")
+	#path <- "C:\\Users\\Big-Rod\\Documents\\GitHub\\Rpkg-proftools-GUI\\inst\\appdir"
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
     runApp(path)
 }

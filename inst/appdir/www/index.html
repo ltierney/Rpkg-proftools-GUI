@@ -82,7 +82,7 @@ $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
 });
   </script>
   <style>
-  #fileName{font-weight: bold; position: absolute; top:480px; left:10px;}
+  #fileName{font-weight: bold; position: absolute; top:518px; left:10px;}
   .red{color:red}
   .hidden{display:none}
   
@@ -101,13 +101,19 @@ $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
     <li class='tab'><a href="#tabs1-funsum">Function Summary</a></li>
     <li class='tab'><a href="#tabs1-hotpaths">Hot Paths</a></li>
   </ul>
-	
+  <br />
+	Plot Type: <select name="plotType">
+  <option value="plotCallgraph" selected>Plot Callgraph</option>
+  <option value="plotTreemap">Plot Tree Map</option>
+  <option value="plotFlamegraph">Plot Flame Graph</option>
+  <option value="plotTimegraph">Plot Time Graph</option>
+</select> 
 	<div class="demo-info" style="margin-bottom:10px">
 		<div class="demo-tip icon-tip">&nbsp;</div>
 		<div></div>
 	</div>
     <input type="text" id="fcnName" name="fcnName" value="" class="hidden"/>
-
+	<input type="text" id="plotType" name="plotType" value="" class="hidden"/>
     <div id="tabs1-funsum">
     <div id="funSum" style="float:left;width:800px;height:400px">
 	<table id="test" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 

@@ -28,12 +28,26 @@ shinyServer(function(input, output, session) {
         }
     })
     output$plot <- renderPlot({
-    if(nchar(input$fcnName)){
-        path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
-        parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
-        filtered <- filterProfileData(pd,parseLine$fcnName,focus=T)
-        plotProfileCallGraph(filtered, style = google.style)
-    }
-    else plotProfileCallGraph(pd, style = google.style)
+		if(nchar(input$fcnName)){
+			path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
+			parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
+			filtered <- filterProfileData(pd,parseLine$fcnName,focus=T)
+			if(input$plotType == 'plotCallgraph')
+				plotProfileCallGraph(filtered, style = google.style)
+			else if(input$plotType == 'plotTreemap')
+				calleeTreeMap(filtered)
+			else if(input$plotType == 'plotFlamegraph')
+				flameGraph(filtered, order="hot")
+			else if(input$plotType == 'plotTimegraph')
+				flameGraph(filtered, order="time")
+		}
+		else if(input$plotType == 'plotCallgraph')
+			plotProfileCallGraph(pd, style = google.style)
+		else if(input$plotType == 'plotTreemap')
+			calleeTreeMap(pd)
+		else if(input$plotType == 'plotFlamegraph')
+			flameGraph(pd, order="hot")
+		else if(input$plotType == 'plotTimegraph')
+			flameGraph(pd, order="time")
   })
 })
