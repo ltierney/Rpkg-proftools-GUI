@@ -20,45 +20,46 @@ $(document).ready(function() {
 count = 0;
 $(document).on('click', 'span', function () {
         
-    });  
-$('#test').treegrid({
-	onClickCell: function(field,row){
-        tempRow = row.id;
-        path = row.name; 
-        for(i=0; i<row.id.length-1; i++){
-            parentRow = $('#test').treegrid('getParent', tempRow);
-            path += ',' + parentRow.name;
-            tempRow = parentRow.id
-        }
-        Shiny.unbindAll();
-        $("#fcnName").val(path);
-        Shiny.bindAll();
-	}
-});
-
+    });
+	/*
 setTimeout(
     function() {
-    $('#test').treegrid('collapseAll');
-      //$('#hotp').slideToggle("slow");
+		if (!$('#self').is(':checked')) {
+			Shiny.unbindAll();
+			$("#gcself").html('');
+			Shiny.bindAll();
+			alert('hi')
+		}
     }, 1000);
-$('#hotpaths').treegrid({
-	onClickCell: function(field,row){
-        tempRow = row.id;
-        path = row.name; 
-        for(i=0; i<row.id.length-1; i++){
-            parentRow = $('#hotpaths').treegrid('getParent', tempRow);
-            path += ',' + parentRow.name;
-            tempRow = parentRow.id
+*/
+Shiny.addCustomMessageHandler("testmessage",
+    function(message) {
+        makeTrees();
+    }
+);	
+function makeTrees(){
+    $('#funsum').treegrid({
+        onClickCell: function(field,row){
+            tempRow = row.id;
+            path = row.name; 
+            for(i=0; i<row.id.length-1; i++){
+                parentRow = $('#funsum').treegrid('getParent', tempRow);
+                path += ',' + parentRow.name;
+                tempRow = parentRow.id
+            }
+            Shiny.unbindAll();
+            $("#fcnName").val(path);
+            Shiny.bindAll();
         }
-        Shiny.unbindAll();
-        $("#fcnName").val(path);
-        Shiny.bindAll();
-	}
-});
-$('#tab-container').easytabs();
-$('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
-    if(panel.selector == '#tabs1-hotpaths' && count == 0){
-           $('#hotpaths').treegrid({
+    });
+
+    setTimeout(
+        function() {
+        $('#funsum').treegrid('collapseAll');
+          //$('#hotp').slideToggle("slow");
+        }, 1000);
+    /*
+    $('#hotpaths').treegrid({
         onClickCell: function(field,row){
             tempRow = row.id;
             path = row.name; 
@@ -71,14 +72,35 @@ $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
             $("#fcnName").val(path);
             Shiny.bindAll();
         }
+    }); 
+    */
+    $('#tab-container').easytabs();
+    $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
+        if(panel.selector == '#tabs1-hotpaths' && count == 0){
+               $('#hotpaths').treegrid({
+            onClickCell: function(field,row){
+                tempRow = row.id;
+                path = row.name; 
+                for(i=0; i<row.id.length-1; i++){
+                    parentRow = $('#hotpaths').treegrid('getParent', tempRow);
+                    path += ',' + parentRow.name;
+                    tempRow = parentRow.id
+                }
+                Shiny.unbindAll();
+                $("#fcnName").val(path);
+                Shiny.bindAll();
+            }
+        });
+        setTimeout(
+        function() {
+        $('#hotpaths').treegrid('collapseAll');
+        }, 1000);
+        count++;
+        }
     });
-    setTimeout(
-    function() {
-    $('#hotpaths').treegrid('collapseAll');
-    }, 1000);
-    count++;
-    }
-});
+    return;
+}
+
 });
   </script>
   <style>
@@ -108,6 +130,14 @@ $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
   <option value="plotFlamegraph">Plot Flame Graph</option>
   <option value="plotTimegraph">Plot Time Graph</option>
 </select> 
+	Units: <select id="value" name="value">
+  <option value="pct" selected>pct</option>
+  <option value="pct">pct</option>
+  <option value="time">time</option>
+  <option value="hits">hits</option>
+</select> 
+ <input id="self" type="checkbox" name="self" value="1"> Self
+ <input id="gc" type="checkbox" name="gc" value="1" checked> GC
 	<div class="demo-info" style="margin-bottom:10px">
 		<div class="demo-tip icon-tip">&nbsp;</div>
 		<div></div>
@@ -116,9 +146,9 @@ $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
 	<input type="text" id="plotType" name="plotType" value="" class="hidden"/>
     <div id="tabs1-funsum">
     <div id="funSum" style="float:left;width:800px;height:400px">
-	<table id="test" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
+	<table id="funsum" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
     data-options="
-                url: 'test.JSON',
+                url: 'funsum.JSON',
 				method: 'get',
 				rownumbers: true,
 				idField: 'id',
@@ -128,9 +158,11 @@ $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
 <tr>
 <th field="name" width="220">Name</th>
 <th field="total" width="150">Total</th>
+<span id="gcself">
 <th field="self" width="150">Self</th>
 <th field="GC" width="150">GC</th>
 <th field="GCself" width="150">GC.Self</th>
+</span>
 </tr>
 		</thead>
 	</table>
@@ -151,9 +183,11 @@ $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
 <tr>
 <th field="name" width="220">Name</th>
 <th field="total" width="150">Total</th>
+<span class="gcself">
 <th field="self" width="150">Self</th>
 <th field="GC" width="150">GC</th>
 <th field="GCself" width="150">GC.Self</th>
+</span>
 </tr>
 		</thead>
 	</table>

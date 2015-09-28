@@ -444,7 +444,7 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
     write(c("{\"rows\":[",parseOffspring(c(), 'hotpaths'),"]}"), 
           paste(path, "/www/hotpaths.JSON", sep=""))         
     write(c("{\"rows\":[",parseOffspring(c(), 'funSum'),"]}"), 
-          paste(path, "/www/test.JSON", sep="")) 
+          paste(path, "/www/funsum.JSON", sep="")) 
 }
 
 runShiny <- function(pd, value = c("pct", "time", "hits"),
@@ -459,14 +459,14 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     # if(!self)
         # cols[c(1,3)] <- ""
     # index <- readLines(paste(path, "/www/index.html", sep=""))
-    # index[67:69] <- cols
+    # index[166:168] <- index[143:145] <- cols
     # write(index,paste(path, "/www/index.html", sep=""))
-	path <- system.file("appdir", package="proftoolsGUI")
-	#path <- "C:\\Users\\Big-Rod\\Documents\\GitHub\\Rpkg-proftools-GUI\\inst\\appdir"
+    path <- system.file("appdir", package="proftoolsGUI")
+    #path <- "C:\\Users\\Big-Rod\\Documents\\GitHub\\Rpkg-proftools-GUI\\inst\\appdir"
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
     runApp(path)
 }
-
+?runapp
 outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'){
     ## Below runs only if Shiny, since fcnAnnot (which is the annotion textbox)
     ## will be null in this case    
@@ -644,5 +644,58 @@ checkHandler <- function(h, ...){
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
                   self.gc[2], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
+}
+myShiny <- function(input, output, session) {
+    observe({
+        srcAnnotate <<- annotateSource(pd, input$value, input$gc, show=FALSE)
+        path <- system.file("appdir", package="proftoolsGUI")
+        #path <- "C:\\Users\\Big-Rod\\Documents\\GitHub\\Rpkg-proftools-GUI\\inst\\appdir"
+        generateJSON(pd, path, input$value, input$self, srclines=TRUE, input$gc,
+                     maxdepth=10)
+        session$sendCustomMessage(type = 'testmessage', 
+                                  message = list(value = input$value, 
+                                                 self = input$self,
+                                                 gc = input$gc))
+    })
+
+    output$fcnAnnot <- renderPrint({
+        if(nchar(input$fcnName)){
+            path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
+            parseLine <- parseLineInfo(path, srcAnnotate)
+            annotation <- functionAnnotate(parseLine$fcnName, 
+                                           path[length(path)], path,
+                                           srcAnnotate, parseLine$fileName, 
+                                           parseLine$lineNumber, "hotPaths", 
+                                           NULL)
+            if(!is.null(fileName))
+                cat(paste('<p id="fileName">Filename: ', fileName, '</p>'))
+            else if(!is.null(parseLine$fileName))
+                cat(paste('<p id="fileName">Filename: ', parseLine$fileName, '</p>'))
+        }
+    })
+    output$plot <- renderPlot({
+        if(nchar(input$fcnName)){
+            path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
+            parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
+            filtered <- filterProfileData(pd,parseLine$fcnName,focus=T)
+            if(input$plotType == 'plotCallgraph')
+                plotProfileCallGraph(filtered, style = google.style)
+            else if(input$plotType == 'plotTreemap')
+                calleeTreeMap(filtered)
+            else if(input$plotType == 'plotFlamegraph')
+                flameGraph(filtered, order="hot")
+            else if(input$plotType == 'plotTimegraph')
+                flameGraph(filtered, order="time")
+        }
+        else if(input$plotType == 'plotCallgraph')
+            plotProfileCallGraph(pd, style = google.style)
+        else if(input$plotType == 'plotTreemap')
+            calleeTreeMap(pd)
+        else if(input$plotType == 'plotFlamegraph')
+            flameGraph(pd, order="hot")
+        else if(input$plotType == 'plotTimegraph')
+            flameGraph(pd, order="time")
+  })    
+
 }
 # Always keep an empty final line or annotateSource will break
