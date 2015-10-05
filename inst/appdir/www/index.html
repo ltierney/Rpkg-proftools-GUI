@@ -32,32 +32,66 @@ setTimeout(
 		}
     }, 1000);
 */
-Shiny.addCustomMessageHandler("testmessage",
-    function(message) {
-        makeTrees();
-    }
-);	
-function makeTrees(){
+$('#tab-container').easytabs();
+function makeFunsum(){
     $('#funsum').treegrid({
-        onClickCell: function(field,row){
-            tempRow = row.id;
-            path = row.name; 
-            for(i=0; i<row.id.length-1; i++){
-                parentRow = $('#funsum').treegrid('getParent', tempRow);
-                path += ',' + parentRow.name;
-                tempRow = parentRow.id
-            }
-            Shiny.unbindAll();
-            $("#fcnName").val(path);
-            Shiny.bindAll();
-        }
-    });
+                    onClickCell: function(field,row){
+                        tempRow = row.id;
+                        path = row.name; 
+                        for(i=0; i<row.id.length-1; i++){
+                            parentRow = $('#funsum').treegrid('getParent', tempRow);
+                            path += ',' + parentRow.name;
+                            tempRow = parentRow.id
+                        }
+                        Shiny.unbindAll();
+                        $("#fcnName").val(path);
+                        Shiny.bindAll();
+                        }
+                });
 
     setTimeout(
         function() {
         $('#funsum').treegrid('collapseAll');
           //$('#hotp').slideToggle("slow");
         }, 1000);
+}
+function makeHotpaths(){
+    $('#hotpaths').treegrid({
+                    onClickCell: function(field,row){
+                        tempRow = row.id;
+                        path = row.name; 
+                        for(i=0; i<row.id.length-1; i++){
+                            parentRow = $('#hotpaths').treegrid('getParent', tempRow);
+                            path += ',' + parentRow.name;
+                            tempRow = parentRow.id
+                        }
+                        Shiny.unbindAll();
+                        $("#fcnName").val(path);
+                        Shiny.bindAll();
+                    }
+                });
+    setTimeout(
+    function() {
+    $('#hotpaths').treegrid('collapseAll');
+    }, 1000);
+}
+
+Shiny.addCustomMessageHandler("testmessage",
+    function(message) {
+        makeFunsum();
+        makeHotpaths();
+        $('#tab-container').bind('easytabs:before', function(evt, tab, panel, data) {
+            if(panel.selector == '#tabs1-hotpaths'){
+                makeHotpaths();
+            }
+            else if(panel.selector == '#tabs1-funsum'){
+                makeFunsum();
+            }
+        });
+    }
+);	
+function makeTrees(){
+
     /*
     $('#hotpaths').treegrid({
         onClickCell: function(field,row){
@@ -74,30 +108,7 @@ function makeTrees(){
         }
     }); 
     */
-    $('#tab-container').easytabs();
-    $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
-        if(panel.selector == '#tabs1-hotpaths' && count == 0){
-               $('#hotpaths').treegrid({
-            onClickCell: function(field,row){
-                tempRow = row.id;
-                path = row.name; 
-                for(i=0; i<row.id.length-1; i++){
-                    parentRow = $('#hotpaths').treegrid('getParent', tempRow);
-                    path += ',' + parentRow.name;
-                    tempRow = parentRow.id
-                }
-                Shiny.unbindAll();
-                $("#fcnName").val(path);
-                Shiny.bindAll();
-            }
-        });
-        setTimeout(
-        function() {
-        $('#hotpaths').treegrid('collapseAll');
-        }, 1000);
-        count++;
-        }
-    });
+
     return;
 }
 
@@ -131,13 +142,13 @@ function makeTrees(){
   <option value="plotTimegraph">Plot Time Graph</option>
 </select> 
 	Units: <select id="value" name="value">
-  <option value="pct" selected>pct</option>
+  <option value="time" selected>time</option>
   <option value="pct">pct</option>
   <option value="time">time</option>
   <option value="hits">hits</option>
 </select> 
- <input id="self" type="checkbox" name="self" value="1"> Self
- <input id="gc" type="checkbox" name="gc" value="1" checked> GC
+<input id="self" type="checkbox" name="self" value="1"> Self
+<input id="gc" type="checkbox" name="gc" value="1" > GC
 	<div class="demo-info" style="margin-bottom:10px">
 		<div class="demo-tip icon-tip">&nbsp;</div>
 		<div></div>

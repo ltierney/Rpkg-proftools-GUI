@@ -450,6 +450,10 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
 runShiny <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, gc = TRUE,
                      maxdepth = 10){
+    filenames <- basename(pd$files)
+    fullPaths <- paste0(getwd(), .Platform$file.sep, filenames)
+    pd <<- pd
+    pd$files <<- pd$files <- ifelse(file.exists(filenames), fullPaths, filenames)
     srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
     cols <- c("<th field=\"self\" width=\"150\">Self</th>",
               "<th field=\"GC\" width=\"150\">GC</th>",
@@ -458,11 +462,15 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
         # cols[2:3] <- ""
     # if(!self)
         # cols[c(1,3)] <- ""
-    # index <- readLines(paste(path, "/www/index.html", sep=""))
-    # index[166:168] <- index[143:145] <- cols
-    # write(index,paste(path, "/www/index.html", sep=""))
     path <- system.file("appdir", package="proftoolsGUI")
-    #path <- "C:\\Users\\Big-Rod\\Documents\\GitHub\\Rpkg-proftools-GUI\\inst\\appdir"
+    #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+    index <- readLines(file.path(path, "www", "index.html"))
+    index[145] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
+    index[150:151] <- paste0(c('<input id="self" type="checkbox" name="self" value="1"',
+                               '<input id="gc" type="checkbox" name="gc" value="1" '),
+                             checked, c('> Self', '> GC'))
+    write(index,file.path(path, "www", "index.html"))
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
     runApp(path)
 }
@@ -649,7 +657,7 @@ myShiny <- function(input, output, session) {
     observe({
         srcAnnotate <<- annotateSource(pd, input$value, input$gc, show=FALSE)
         path <- system.file("appdir", package="proftoolsGUI")
-        #path <- "C:\\Users\\Big-Rod\\Documents\\GitHub\\Rpkg-proftools-GUI\\inst\\appdir"
+        #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
         generateJSON(pd, path, input$value, input$self, srclines=TRUE, input$gc,
                      maxdepth=10)
         session$sendCustomMessage(type = 'testmessage', 
