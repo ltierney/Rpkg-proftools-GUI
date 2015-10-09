@@ -439,7 +439,7 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
     callSum <<- fixSumDF(callSum, self, gc, value)
     fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
     fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
-    cycles <- cvtProfileData(pd, TRUE)$cycles
+    cycles <- profileDataCycles(pd, TRUE)
     cycles <<- lapply(cycles, function(x) c(x, x[1]))
     write(c("{\"rows\":[",parseOffspring(c(), 'hotpaths'),"]}"), 
           paste(path, "/www/hotpaths.JSON", sep=""))         
@@ -450,10 +450,8 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
 runShiny <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, gc = TRUE,
                      maxdepth = 10){
-    filenames <- basename(pd$files)
-    fullPaths <- paste0(getwd(), .Platform$file.sep, filenames)
-    pd <<- pd
-    pd$files <<- pd$files <- ifelse(file.exists(filenames), fullPaths, filenames)
+    pd$files <- normalizePath(pd$files)
+
     srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
     cols <- c("<th field=\"self\" width=\"150\">Self</th>",
               "<th field=\"GC\" width=\"150\">GC</th>",
@@ -472,7 +470,7 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
                              checked, c('> Self', '> GC'))
     write(index,file.path(path, "www", "index.html"))
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
-    runApp(path)
+    shiny::runApp(path)
 }
 ?runapp
 outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'){
