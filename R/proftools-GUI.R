@@ -447,10 +447,20 @@ generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
           paste(path, "/www/funsum.JSON", sep="")) 
 }
 
+shinyPD <- local({
+    pd <- NULL
+    function(new) {
+        if (! missing(new))
+            pd <<- new
+        pd
+    }
+})
+
 runShiny <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, gc = TRUE,
                      maxdepth = 10){
     pd$files <- normalizePath(pd$files)
+    shinyPD(pd)
 
     srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
     cols <- c("<th field=\"self\" width=\"150\">Self</th>",
@@ -652,6 +662,7 @@ checkHandler <- function(h, ...){
                   self.gc[2], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 myShiny <- function(input, output, session) {
+    pd <- shinyPD()
     observe({
         srcAnnotate <<- annotateSource(pd, input$value, input$gc, show=FALSE)
         path <- system.file("appdir", package="proftoolsGUI")
