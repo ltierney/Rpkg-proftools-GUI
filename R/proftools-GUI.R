@@ -417,7 +417,8 @@ parseSon <- function(i, offspringDF, path, id, treetype){
         lastTwo <- c(getFname(path[length(path)]), 
                      getFname(as.character(offspringDF$Function[i])))
         makeSons <- !(any(as.logical(lapply(cycles, vecIn, lastTwo)), na.rm=TRUE) 
-                          || (lastTwo[1] == lastTwo[2]))
+                      || (lastTwo[1] == lastTwo[2]) 
+                      || is.element(as.character(offspringDF$Function[i]), path))
     }
     else
         makeSons <- TRUE
@@ -473,11 +474,12 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     path <- system.file("appdir", package="proftoolsGUI")
     #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
-    index[145] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    index[205] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[150:151] <- paste0(c('<input id="self" type="checkbox" name="self" value="1"',
+    index[210:212] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+                               '<input id="self" type="checkbox" name="self" value="1"',
                                '<input id="gc" type="checkbox" name="gc" value="1" '),
-                             checked, c('> Self', '> GC'))
+                             c(pd$total, checked), c('">', '> Self', '> GC'))
     write(index,file.path(path, "www", "index.html"))
     generateJSON(pd, path, value, self, srclines, gc, maxdepth)
     shiny::runApp(path)
@@ -664,10 +666,14 @@ checkHandler <- function(h, ...){
 myShiny <- function(input, output, session) {
     pd <- shinyPD()
     observe({
-        srcAnnotate <<- annotateSource(pd, input$value, input$gc, show=FALSE)
+        if(input$sliderLower != '')
+            filteredPD <- filterProfileData(pd, interval = c(input$sliderLower, input$sliderUpper))
+        else
+            filteredPD <- pd
+        srcAnnotate <<- annotateSource(filteredPD, input$value, input$gc, show=FALSE)
         path <- system.file("appdir", package="proftoolsGUI")
         #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
-        generateJSON(pd, path, input$value, input$self, srclines=TRUE, input$gc,
+        generateJSON(filteredPD, path, input$value, input$self, srclines=TRUE, input$gc,
                      maxdepth=10)
         session$sendCustomMessage(type = 'testmessage', 
                                   message = list(value = input$value, 
