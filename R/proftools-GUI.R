@@ -418,7 +418,7 @@ parseSon <- function(i, offspringDF, path, id, treetype){
                      getFname(as.character(offspringDF$Function[i])))
         makeSons <- !(any(as.logical(lapply(cycles, vecIn, lastTwo)), na.rm=TRUE) 
                       || (lastTwo[1] == lastTwo[2]) 
-                      || is.element(as.character(offspringDF$Function[i]), path))
+                      || (length(path) >= 2))
     }
     else
         makeSons <- TRUE
@@ -464,9 +464,9 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     shinyPD(pd)
 
     srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
-    cols <- c("<th field=\"self\" width=\"150\">Self</th>",
-              "<th field=\"GC\" width=\"150\">GC</th>",
-              "<th field=\"GCself\" width=\"150\">GC.Self</th>")
+    # cols <- c("<th field=\"self\" width=\"150\">Self</th>",
+              # "<th field=\"GC\" width=\"150\">GC</th>",
+              # "<th field=\"GCself\" width=\"150\">GC.Self</th>")
     # if(!gc)
         # cols[2:3] <- ""
     # if(!self)
@@ -538,7 +538,8 @@ functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName,
 functionAnnotation <- function(fcnName, srcAnnotate, fileName, lineNumber, 
                                fcnAnnot){
     if(length(fileName)){
-        x <- srcAnnotate[[fileName]][lineNumber]
+        # Not needed for now
+        # x <- srcAnnotate[[fileName]][lineNumber]
         fileEnd <- length(srcAnnotate[[fileName]])
         ends <- min(lineNumber+7, fileEnd)
         if(lineNumber != 1)
@@ -565,7 +566,8 @@ findFunction <- function(i, fcnName, fcnAnnot){
                           "[[:blank:]]*(<-|=)[[:blank:]]*function", 
                           sep=""), srcCode[defineFcns])
     if(length(haveFcn)){
-        x <- srcCode[defineFcns[haveFcn]]
+        # Not needed for now
+        # x <- srcCode[defineFcns[haveFcn]]
         lineNumber <- defineFcns[haveFcn]
         fileEnd <- length(srcCode)
         ends <- min(lineNumber+7, fileEnd)
@@ -685,11 +687,9 @@ myShiny <- function(input, output, session) {
         if(nchar(input$fcnName)){
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path, srcAnnotate)
-            annotation <- functionAnnotate(parseLine$fcnName, 
-                                           path[length(path)], path,
-                                           srcAnnotate, parseLine$fileName, 
-                                           parseLine$lineNumber, "hotPaths", 
-                                           NULL)
+            functionAnnotate(parseLine$fcnName, path[length(path)], path,
+                             srcAnnotate, parseLine$fileName, 
+                             parseLine$lineNumber, "hotPaths", NULL)
             if(!is.null(fileName))
                 cat(paste('<p id="fileName">Filename: ', fileName, '</p>'))
             else if(!is.null(parseLine$fileName))
