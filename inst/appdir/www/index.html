@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="keywords" content="jquery,ui,easy,easyui,web">
+	<meta name="description" content="easyui help you build your web page easily!">
+	<title>Lazy loading nodes in TreeGrid - jQuery EasyUI Demo</title>
+	<link rel="stylesheet" type="text/css" href="themes/default/easyui.css">
+	<link rel="stylesheet" type="text/css" href="themes/icon.css">
+	<link rel="stylesheet" type="text/css" href="styles/demo.css">
+    <link rel="stylesheet" type="text/css" href="styles/nouislider.min.css"><link rel="stylesheet" type="text/css" href="styles/nouislider.pips.css"><link rel="stylesheet" type="text/css" href="styles/nouislider.tooltips.css">
+    <!-- <script src="shared/jquery.js" type="text/javascript"></script> -->
+    <script src="jquery.min.js"></script>
+
+	<script type="text/javascript" src="js/jquery.easyui.min.js"></script>
+    <script src="js/jquery.easytabs.min.js" type="text/javascript"></script>
+    <script src="js/nouislider.min.js" type="text/javascript"></script>
+  <script src="shared/shiny.js" type="text/javascript"></script>
+  <link rel="stylesheet" type="text/css" href="shared/shiny.css"/> 
+  <script>
+$(document).ready(function() {
+
+
+function filter10( value, type ){
+	return value % 10 ? 1 : 0;
+}
+
+var slider = document.getElementById('filterSlider');
+total = $("#total").val();
+
+noUiSlider.create(slider, {
+	start: [1, parseInt(total)], // Handle start position
+	step: 1, // Slider moves in increments of '10'
+	margin: 1, // Handles must be more than '20' apart
+	connect: true, // Display a colored bar between the handles
+	range: { // Slider can select '0' to '100'
+		'min': 1,
+		'max': parseInt(total)
+	},
+	pips: { // Show a scale with the slider
+		mode: 'positions',
+        density: 5,
+        values: [0,10,20,30,40,50,60,70,80,90,100],
+	}
+});
+
+$("#filter").click(function() {
+    values = slider.noUiSlider.get();
+    Shiny.unbindAll();
+    $("#sliderLower").val(parseInt(values[0]));
+    $("#sliderUpper").val(parseInt(values[1]));
+    Shiny.bindAll();
+});
+
+count = 0;
+$(document).on('click', 'span', function () {
+        
+    });
+	/*
+setTimeout(
+    function() {
+		if (!$('#self').is(':checked')) {
+			Shiny.unbindAll();
+			$("#gcself").html('');
+			Shiny.bindAll();
+			alert('hi')
+		}
+    }, 1000);
+*/
+$('#tab-container').easytabs();
+function makeFunsum(){
+    $('#funsum').treegrid({
+                    onClickCell: function(field,row){
+                        tempRow = row.id;
+                        path = row.name; 
+                        for(i=0; i<row.id.length-1; i++){
+                            parentRow = $('#funsum').treegrid('getParent', tempRow);
+                            path += ',' + parentRow.name;
+                            tempRow = parentRow.id
+                        }
+                        Shiny.unbindAll();
+                        $("#fcnName").val(path);
+                        Shiny.bindAll();
+                        }
+                });
+
+    setTimeout(
+        function() {
+        $('#funsum').treegrid('collapseAll');
+          //$('#hotp').slideToggle("slow");
+        }, 1000);
+}
+function makeHotpaths(){
+    $('#hotpaths').treegrid({
+                    onClickCell: function(field,row){
+                        tempRow = row.id;
+                        path = row.name; 
+                        for(i=0; i<row.id.length-1; i++){
+                            parentRow = $('#hotpaths').treegrid('getParent', tempRow);
+                            path += ',' + parentRow.name;
+                            tempRow = parentRow.id
+                        }
+                        Shiny.unbindAll();
+                        $("#fcnName").val(path);
+                        Shiny.bindAll();
+                    }
+                });
+    setTimeout(
+    function() {
+    $('#hotpaths').treegrid('collapseAll');
+    }, 1000);
+}
+
+Shiny.addCustomMessageHandler("testmessage",
+    function(message) {
+        makeFunsum();
+        makeHotpaths();
+        $('#tab-container').bind('easytabs:before', function(evt, tab, panel, data) {
+            if(panel.selector == '#tabs1-hotpaths'){
+                makeHotpaths();
+            }
+            else if(panel.selector == '#tabs1-funsum'){
+                makeFunsum();
+            }
+        });
+    }
+);	
+function makeTrees(){
+
+    /*
+    $('#hotpaths').treegrid({
+        onClickCell: function(field,row){
+            tempRow = row.id;
+            path = row.name; 
+            for(i=0; i<row.id.length-1; i++){
+                parentRow = $('#hotpaths').treegrid('getParent', tempRow);
+                path += ',' + parentRow.name;
+                tempRow = parentRow.id
+            }
+            Shiny.unbindAll();
+            $("#fcnName").val(path);
+            Shiny.bindAll();
+        }
+    }); 
+    */
+
+    return;
+}
+
+});
+  </script>
+  <style>
+  #fileName{font-weight: bold; position: absolute; top:638px; left:10px;}
+  .red{color:red}
+  .hidden{display:none}
+  
+  .etabs { margin: 0; padding: 0; }
+.tab { display: inline-block; zoom:1; *display:inline; background: #eee; border: solid 1px #999; border-bottom: none; -moz-border-radius: 4px 4px 0 0; -webkit-border-radius: 4px 4px 0 0; }
+.tab a { font-size: 14px; line-height: 2em; display: block; padding: 0 10px; outline: none; }
+.tab a:hover { text-decoration: underline; }
+.tab.active { background: #fff; padding-top: 6px; position: relative; top: 1px; border-color: #666; }
+.tab a.active { font-weight: bold; }
+.tab-container .panel-container { background: #fff; border: solid #666 1px; padding: 10px; -moz-border-radius: 0 4px 4px 4px; -webkit-border-radius: 0 4px 4px 4px; }
+  
+.flat-button {
+  margin: 10px 0 10px 0;
+  position: relative;
+  vertical-align: top;
+  width: 30%;
+  height: 60px;
+  padding: 0;
+  font-size: 22px;
+  color: white;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  background: #3498db;
+  border: 0;
+  border-bottom: 2px solid #2a8bcc;
+  cursor: pointer;
+  -webkit-box-shadow: inset 0 -2px #2a8bcc;
+  box-shadow: inset 0 -2px #2a8bcc;
+}
+.flat-button:active {
+  top: 1px;
+  outline: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}  
+  </style>
+</head>
+<body>
+<div id="tab-container" class="tab-container">
+  <ul class='etabs'>
+    <li class='tab'><a href="#tabs1-funsum">Function Summary</a></li>
+    <li class='tab'><a href="#tabs1-hotpaths">Hot Paths</a></li>
+  </ul>
+  <br />
+	Plot Type: <select name="plotType">
+  <option value="plotCallgraph" selected>Plot Callgraph</option>
+  <option value="plotTreemap">Plot Tree Map</option>
+  <option value="plotFlamegraph">Plot Flame Graph</option>
+  <option value="plotTimegraph">Plot Time Graph</option>
+</select> 
+	Units: <select id="value" name="value">
+  <option value="time" selected>time</option>
+  <option value="pct">pct</option>
+  <option value="time">time</option>
+  <option value="hits">hits</option>
+</select> 
+<input id="total" type="hidden" name="count" value="">
+<input id="self" type="checkbox" name="self" value="1"> Self
+<input id="gc" type="checkbox" name="gc" value="1" > GC
+<div style="margin:20px 0 40px 0" id="filterSlider"> </div>
+ <button type="button" id="filter" class="flat-button">Filter Selection</button> 
+
+
+
+    <input type="text" id="fcnName" name="fcnName" value="" class="hidden"/>
+	<input type="text" id="plotType" name="plotType" value="" class="hidden"/>
+    <input type="text" id="sliderUpper" name="sliderUpper" value="" class="hidden"/>
+    <input type="text" id="sliderLower" name="sliderLower" value="" class="hidden"/>
+    <div id="tabs1-funsum">
+    <div id="funSum" style="float:left;width:800px;height:400px">
+	<table id="funsum" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
+    data-options="
+                url: 'funsum.JSON',
+				method: 'get',
+				rownumbers: true,
+				idField: 'id',
+				treeField: 'name'
+			">
+		<thead>
+<tr>
+<th field="name" width="220">Name</th>
+<th field="total" width="150">Total</th>
+<span id="gcself">
+<th field="self" width="150">Self</th>
+<th field="GC" width="150">GC</th>
+<th field="GCself" width="150">GC.Self</th>
+</span>
+</tr>
+		</thead>
+	</table>
+    </div>
+    </div>
+    <div id="tabs1-hotpaths">
+    <div id="hotp" style="float:left;width:800px;height:400px">
+	<table id="hotpaths" title="Hot Paths" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
+			data-options="
+				url: 'hotpaths.JSON',
+				method: 'get',
+				rownumbers: true,
+				idField: 'id',
+				treeField: 'name',
+				loadFilter: myLoadFilter
+			">
+		<thead>
+<tr>
+<th field="name" width="220">Name</th>
+<th field="total" width="150">Total</th>
+<span class="gcself">
+<th field="self" width="150">Self</th>
+<th field="GC" width="150">GC</th>
+<th field="GCself" width="150">GC.Self</th>
+</span>
+</tr>
+		</thead>
+	</table>
+    </div>
+    </div>
+    </div>
+     <div id="plot" class="shiny-plot-output" style="float:right;width: 32%; height: 400px"></div> 
+     
+	<script>
+		function myLoadFilter(data,parentId){
+			function setData(){
+				var todo = [];
+				for(var i=0; i<data.length; i++){
+					todo.push(data[i]);
+				}
+				while(todo.length){
+					var node = todo.shift();
+					if (node.children){
+						node.state = 'closed';
+						node.children1 = node.children;
+						node.children = undefined;
+						todo = todo.concat(node.children1);
+					}
+				}
+			}
+			
+			setData(data);
+			var tg = $(this);
+			var opts = tg.treegrid('options');
+			opts.onBeforeExpand = function(row){
+				if (row.children1){
+					tg.treegrid('append',{
+						parent: row[opts.idField],
+						data: row.children1
+					});
+					row.children1 = undefined;
+					tg.treegrid('expand', row[opts.idField]);
+				}
+				return row.children1 == undefined;
+			};
+			return data;
+		}
+	</script>
+    <p style="clear:both; margin-top:15px"></p>
+     <pre id="fcnAnnot" class="shiny-html-output" style="border: 1px double silver;height: 400px; margin-top: 30px;overflow-y:scroll;"></pre>
+    <pre id="test2"></pre>
+
+</body>
+</html>

@@ -1,1 +1,7 @@
 export(startWidget)
+export(runShiny)
+export(parseLineInfo)
+export(functionAnnotate)
+export(myShiny)
+import(proftools)
+import(gWidgets2)
