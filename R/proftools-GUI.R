@@ -264,7 +264,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         delete(win, group)
-        processWidget(filterProfileData(pd,"source",focus=T), value, self,
+        processWidget(filterProfileData(pd, focus = "source"), value, self,
                       srclines, gc, maxdepth, interval, treeType, win)
         unlink(tmp)
     }    
@@ -621,22 +621,22 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
                          parseLine$lineNumber, treeType, fcnAnnot)
     }, action=fcnAnnot)
     plotCallgraph <- function(h, ...){
-        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        filtered <- filterProfileData(pd, focus = fcnNameRClick)
         plotProfileCallGraph(filtered, style = google.style)
         plotType <<- 'plotCallgraph'        
     }
     plotTreemap <- function(h, ...){
-        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        filtered <- filterProfileData(pd, focus = fcnNameRClick)
         calleeTreeMap(filtered)    
         plotType <<- 'plotTreemap'        
     }
     plotFlamegraph <- function(h, ...){
-        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        filtered <- filterProfileData(pd, focus = fcnNameRClick)
         flameGraph(filtered, order="hot")
         plotType <<- 'plotFlamegraph'
     }
     plotTimegraph <- function(h, ...){
-        filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
+        filtered <- filterProfileData(pd, focus = fcnNameRClick)
         flameGraph(filtered, order="time")
         plotType <<- 'plotTimegraph'        
     }
@@ -700,7 +700,7 @@ myShiny <- function(input, output, session) {
         if(nchar(input$fcnName)){
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
-            filtered <- filterProfileData(pd,parseLine$fcnName,focus=T)
+            filtered <- filterProfileData(pd, focus = parseLine$fcnName)
             if(input$plotType == 'plotCallgraph')
                 plotProfileCallGraph(filtered, style = google.style)
             else if(input$plotType == 'plotTreemap')
