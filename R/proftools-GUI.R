@@ -1,6 +1,7 @@
 
-offspring <- function(path, self.gc) {
-    DF <- offspringData
+offspring <- function(path, win) {
+    DF <- attr(win, 'env')$offspringDF
+    self.gc <- attr(win, 'env')$self.gc
     if(length(path) > 0){
         pathLength <- length(path)
         path <- paste(path, collapse=" -> ")
@@ -67,7 +68,7 @@ setOffspringDF <- function(pd, value = c("pct", "time", "hits"),
     pathData <- fixSumDF(pathData, self, gc, value)
     ## Reason for global assignment is tcltk toolkit has problems passing the 
     ## dataframe to get children of foundingFathers
-    offspringData <<- data.frame(path=as.character(y[1,]), 
+    data.frame(path=as.character(y[1,]), 
                                  name=as.character(y[2,]), depth=as.numeric(y[3,]), 
                                  total=pathData$total, self=pathData$self,
                                  GC=pathData$gc, GC.Self=pathData$gcself,
@@ -87,10 +88,14 @@ fixSumDF <- function(DF, self, gc, value){
     DF
 }
 
-offspringFunSum <- function(path, self.gc) {
+offspringFunSum <- function(path, win) {
+    callSum <- attr(win, 'env')$callSum
+    fcnSummary <- attr(win, 'env')$fcnSummary
+    self.gc <- attr(win, 'env')$self.gc
     if(length(path) > 0){
         fcnName <- path[length(path)]
         fcn <- paste(" ", fcnName, " ->", sep="")
+        
         calledFcns <- grep(fcn, row.names(callSum), fixed=TRUE)
         calledFcns <- callSum[calledFcns,]
         splitFcns <- unlist(strsplit(row.names(calledFcns), "-> ", fixed=T))
@@ -151,6 +156,8 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                           self = FALSE, srclines = TRUE, gc = TRUE,
                           maxdepth = 10, interval, treeType="funSum", win){
     group <- ggroup(horizontal=FALSE,container=win)
+    attr(win, 'env') <- new.env()
+    attr(win, 'env')$self.gc <- c(self, gc)
     if(!is.null(pd)){
         buttonCont <- ggroup(container=group)
         passedList <- list(pd=pd, value=value, self=self, srclines=srclines, 
@@ -343,9 +350,9 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     treeType <- "funSum"
     callSum <- callSummary(pd, byTotal = TRUE, value, srclines, gc)
     row.names(callSum) <- paste(" ", row.names(callSum), sep="")
-    callSum <<- fixSumDF(callSum, self, gc, value)
+    attr(win, 'env')$callSum <- fixSumDF(callSum, self, gc, value)
     fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
-    fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
+    attr(win, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
     g <- gpanedgroup(container=gPane)
     treeCont <- gframe(text="Function Summary", container=g, expand=TRUE)
@@ -353,19 +360,19 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     svalue(g) <- .5
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
-    tree <<- gtree(offspring=offspringFunSum, offspring.data = c(self,gc),
+    tree <- gtree(offspring=offspringFunSum, offspring.data = win,
                   container=treeCont, expand=TRUE, fill="both")
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd)
+    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, gg)
 }
 
 hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                          srclines = TRUE, gc = TRUE, maxdepth = 10, srcAnnotate,
                          win, group){
     treeType <- "hotPaths"
-    setOffspringDF(pd, value, self, srclines, gc, maxdepth)
+    attr(win, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines, gc, maxdepth)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
     g <- gpanedgroup(container=gPane)
     treeCont <- gframe(text="Hot Paths", container=g, expand=TRUE, 
@@ -374,19 +381,19 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     svalue(g) <- .5
     fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
-    tree <- gtree(offspring = offspring, offspring.data = c(self,gc), 
+    tree <- gtree(offspring = offspring, offspring.data = win, 
                   container=treeCont, expand=TRUE, fill="both")
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd)
+    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win)
 }
 
-parseOffspring <- function(path, treetype, id=NULL){
+parseOffspring <- function(path, treetype, win, id=NULL){
     if(treetype == 'hotpaths') 
-        offspringDF <- offspring(path, c(TRUE,TRUE))
-    else offspringDF <- offspringFunSum(path, c(TRUE,TRUE))
-    paste(sapply(1:nrow(offspringDF), parseSon, offspringDF, path, id, treetype), 
+        offspringDF <- offspring(path, win)
+    else offspringDF <- offspringFunSum(path, win)
+    paste(sapply(1:nrow(offspringDF), parseSon, offspringDF, path, id, treetype, win), 
           collapse=",")
 }
 ## gets function name without line info
@@ -404,7 +411,7 @@ vecIn <- function(a,b){
                                 y[[x]][x:(length(a) - length(b) +x)]
                              })) == length(b))
 } 
-parseSon <- function(i, offspringDF, path, id, treetype){
+parseSon <- function(i, offspringDF, path, id, treetype, win){
     if(length(path)) parent <- paste0(',"_parentId":', id)
     else parent <- NULL
     #parentID <- substr(id[1], 1, nchar(id[1])-1)
@@ -425,26 +432,18 @@ parseSon <- function(i, offspringDF, path, id, treetype){
     if(offspringDF$haveSons[i] && makeSons)
         x <- paste(x, "},",
                    parseOffspring(c(path, as.character(offspringDF$Function[i]))
-                                  , treetype, newID))
+                                  , treetype, win, newID))
     else
         x <- paste(x,"}")
     x
 }
 
-generateJSON <- function(pd, path, value = c("pct", "time", "hits"),
-                         self = FALSE, srclines = TRUE, gc = TRUE,
-                         maxdepth = 10){
-    setOffspringDF(pd, value, self, srclines, gc, maxdepth)
-    callSum <- callSummary(pd, byTotal = TRUE, value, srclines, gc)
-    row.names(callSum) <- paste(" ", row.names(callSum), sep="")
-    callSum <<- fixSumDF(callSum, self, gc, value)
-    fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
-    fcnSummary <<- fixSumDF(fcnSummary, self, gc, value)
+generateJSON <- function(pd, path, winHotpaths, winFunsum){
     cycles <- profileDataCycles(pd, TRUE)
     cycles <<- lapply(cycles, function(x) c(x, x[1]))
-    write(c("{\"rows\":[",parseOffspring(c(), 'hotpaths'),"]}"), 
+    write(c("{\"rows\":[",parseOffspring(c(), 'hotpaths', winHotpaths),"]}"), 
           paste(path, "/www/hotpaths.JSON", sep=""))         
-    write(c("{\"rows\":[",parseOffspring(c(), 'funSum'),"]}"), 
+    write(c("{\"rows\":[",parseOffspring(c(), 'funSum', winFunsum),"]}"), 
           paste(path, "/www/funsum.JSON", sep="")) 
 }
 
@@ -457,6 +456,14 @@ shinyPD <- local({
     }
 })
 
+shinyPD <- local({
+    pd <- NULL
+    function(new) {
+        if (! missing(new))
+            pd <<- new
+        pd
+    }
+})
 runShiny <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, srclines = TRUE, gc = TRUE,
                      maxdepth = 10){
@@ -472,19 +479,28 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     # if(!self)
         # cols[c(1,3)] <- ""
     path <- system.file("appdir", package="proftoolsGUI")
-    #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+    # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
-    index[205] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    index[207] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[210:212] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+    index[212:214] <- paste0(c('<input id="total" type="hidden" name="count" value="',
                                '<input id="self" type="checkbox" name="self" value="1"',
                                '<input id="gc" type="checkbox" name="gc" value="1" '),
                              c(pd$total, checked), c('">', '> Self', '> GC'))
     write(index,file.path(path, "www", "index.html"))
-    generateJSON(pd, path, value, self, srclines, gc, maxdepth)
+    winHotpaths <- winFunsum <- c(1)
+    attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
+    attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc)
+    attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines=TRUE, gc, maxdepth=10)
+    callSum <- callSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
+    row.names(callSum) <- paste(" ", row.names(callSum), sep="")
+    attr(winFunsum, 'env')$callSum <- fixSumDF(callSum, self, gc, value)
+    fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
+    attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value) 
+    generateJSON(pd, path, winHotpaths, winFunsum)
     shiny::runApp(path)
 }
-?runapp
+
 outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'){
     ## Below runs only if Shiny, since fcnAnnot (which is the annotion textbox)
     ## will be null in this case    
@@ -500,7 +516,7 @@ outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'
 }
 # annotName is the name along with possible line info, fcnName strips those
 functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName, 
-                             lineNumber, treeType, fcnAnnot){
+                             lineNumber, treeType, fcnAnnot, win){
     ## fileName used in Shiny
     fileName <<- NULL
     if(is.null(srcAnnotate)) {
@@ -512,13 +528,13 @@ functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName,
     # Can't find function annotation or code, try the same for its first child                                  
     if(is.null(fcnAnnotate) && (length(path) > 1)){
         if(treeType=="hotPaths")
-            siblingsDF <- offspring(path[-length(path)],c(TRUE,TRUE)) 
-        else siblingsDF <- offspringFunSum(path[-length(path)],c(TRUE,TRUE))
+            siblingsDF <- offspring(path[-length(path)], win) 
+        else siblingsDF <- offspringFunSum(path[-length(path)],win)
         fcnDF <- siblingsDF[siblingsDF$Function==annotName,]
         if(fcnDF$haveSons){
             if(treeType=="hotPaths")
-                sonsDF <- offspring(path,c(TRUE,TRUE))
-            else sonsDF <- offspringFunSum(path,c(TRUE,TRUE))
+                sonsDF <- offspring(path, win)
+            else sonsDF <- offspringFunSum(path, win)
             for(i in 1:nrow(sonsDF)){
                 fcnInfo <- parseLineInfo(as.character(sonsDF$Function[i]),
                                          srcAnnotate)
@@ -554,11 +570,11 @@ functionAnnotation <- function(fcnName, srcAnnotate, fileName, lineNumber,
         return(TRUE)
     }
     else{
-        unlist(lapply(seq_along(srcAnnotate), findFunction, fcnName, fcnAnnot))
+        unlist(lapply(seq_along(srcAnnotate), findFunction, fcnName, fcnAnnot, srcAnnotate))
     }
 }
 
-findFunction <- function(i, fcnName, fcnAnnot){
+findFunction <- function(i, fcnName, fcnAnnot, srcAnnotate){
     srcCode <- srcAnnotate[[i]]
     defineFcns <- grep("function", srcCode, fixed=T)
     haveFcn <- grep(paste("[[:blank:]]+", 
@@ -603,8 +619,10 @@ parseLineInfo <- function(fcnName, srcAnnotate){
     list(fcnName=fcnName,lineNumber=lineNumber,fileName=fileName)
 }
 
-addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
+addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win){
+    
     addHandlerClicked(tree, handler=function(h,...) {
+        visible(gg) <- TRUE
         fcnAnnot <- h$action
         path <- svalue(h$obj, drop=FALSE)
         if(length(path) == 0){
@@ -618,7 +636,7 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd){
         svalue(fcnAnnot) <- ''
         functionAnnotate(parseLine$fcnName, annotName, path, 
                          srcAnnotate, parseLine$fileName, 
-                         parseLine$lineNumber, treeType, fcnAnnot)
+                         parseLine$lineNumber, treeType, fcnAnnot, win)
     }, action=fcnAnnot)
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd,fcnNameRClick,focus=T)
@@ -667,36 +685,59 @@ checkHandler <- function(h, ...){
 }
 myShiny <- function(input, output, session) {
     pd <- shinyPD()
-    observe({
+    
+    filtered <- reactive({
         if(input$sliderLower != '')
-            filteredPD <- filterProfileData(pd, interval = c(input$sliderLower, input$sliderUpper))
+            filterProfileData(pd, interval = c(input$sliderLower, input$sliderUpper))
         else
-            filteredPD <- pd
+            pd
+    })
+    
+    dataInput <- reactive({
+        filteredPD <- filtered()
+        winHotpaths <- winFunsum <- c(1)
+        attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
+        attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(input$self, input$gc)
+        attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, input$value, input$self, srclines=TRUE, input$gc, maxdepth=10)
+        callSum <- callSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
+        row.names(callSum) <- paste(" ", row.names(callSum), sep="")
+        attr(winFunsum, 'env')$callSum <- fixSumDF(callSum, input$self, input$gc, input$value)
+        fcnSummary <- funSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
+        attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, input$self, input$gc, input$value) 
+        list(winHotpaths = winHotpaths, winFunsum = winFunsum)
+    })
+    
+    shiny::observe({
+        filteredPD <- filtered()
         srcAnnotate <<- annotateSource(filteredPD, input$value, input$gc, show=FALSE)
         path <- system.file("appdir", package="proftoolsGUI")
-        #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
-        generateJSON(filteredPD, path, input$value, input$self, srclines=TRUE, input$gc,
-                     maxdepth=10)
+        # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+        wins <- dataInput()
+        generateJSON(filteredPD, path, wins$winHotpaths, wins$winFunsum)
         session$sendCustomMessage(type = 'testmessage', 
                                   message = list(value = input$value, 
                                                  self = input$self,
                                                  gc = input$gc))
     })
 
-    output$fcnAnnot <- renderPrint({
+    output$fcnAnnot <- shiny::renderPrint({
         if(nchar(input$fcnName)){
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path, srcAnnotate)
+            if(input$treeType == 'hotpaths')
+                win <- dataInput()$winHotpaths
+            else
+                win <- dataInput()$winFunsum
             functionAnnotate(parseLine$fcnName, path[length(path)], path,
                              srcAnnotate, parseLine$fileName, 
-                             parseLine$lineNumber, "hotPaths", NULL)
+                             parseLine$lineNumber, "hotPaths", NULL, win)
             if(!is.null(fileName))
                 cat(paste('<p id="fileName">Filename: ', fileName, '</p>'))
             else if(!is.null(parseLine$fileName))
                 cat(paste('<p id="fileName">Filename: ', parseLine$fileName, '</p>'))
         }
     })
-    output$plot <- renderPlot({
+    output$plot <- shiny::renderPlot({
         if(nchar(input$fcnName)){
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
