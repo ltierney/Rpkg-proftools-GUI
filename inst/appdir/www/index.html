@@ -79,6 +79,7 @@ function makeFunsum(){
                             tempRow = parentRow.id
                         }
                         Shiny.unbindAll();
+                        $("#treeType").val('funsum');
                         $("#fcnName").val(path);
                         Shiny.bindAll();
                         }
@@ -89,7 +90,7 @@ function makeFunsum(){
         $('#funsum').treegrid('collapseAll');
           //$('#hotp').slideToggle("slow");
         }, 1000);
-}
+} 
 function makeHotpaths(){
     $('#hotpaths').treegrid({
                     onClickCell: function(field,row){
@@ -101,6 +102,7 @@ function makeHotpaths(){
                             tempRow = parentRow.id
                         }
                         Shiny.unbindAll();
+                        $("#treeType").val('hotpaths');
                         $("#fcnName").val(path);
                         Shiny.bindAll();
                     }
@@ -207,7 +209,7 @@ function makeTrees(){
   <option value="time">time</option>
   <option value="hits">hits</option>
 </select> 
-<input id="total" type="hidden" name="count" value="">
+<input id="total" type="hidden" name="count" value="894">
 <input id="self" type="checkbox" name="self" value="1"> Self
 <input id="gc" type="checkbox" name="gc" value="1" > GC
 <div style="margin:20px 0 40px 0" id="filterSlider"> </div>
@@ -216,6 +218,7 @@ function makeTrees(){
 
 
     <input type="text" id="fcnName" name="fcnName" value="" class="hidden"/>
+     <input type="text" id="treeType" name="treeType" value="" class="hidden"/>
 	<input type="text" id="plotType" name="plotType" value="" class="hidden"/>
     <input type="text" id="sliderUpper" name="sliderUpper" value="" class="hidden"/>
     <input type="text" id="sliderLower" name="sliderLower" value="" class="hidden"/>
