@@ -146,8 +146,8 @@ startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
     options(guiToolkit = toolkit)
     win <- gwindow("Hot Path Tree", height=700, width=1000)
     ## Remove widgetMenu from previous session
-    if(exists("widgetMenu")) 
-        remove(widgetMenu, pos=.GlobalEnv)
+    # if(exists("widgetMenu")) 
+        # remove(widgetMenu, pos=.GlobalEnv)
     processWidget(pd, value, self, srclines, gc, maxdepth, interval, treeType,
                   win)
 }
@@ -245,7 +245,7 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     glabel("Stop: ", container=sCont)
     s2 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[2], 
                   handler = s2Handler, cont=sCont) 
-    filterButton <- gbutton("Filter Selection", handler = filterHandler, 
+    gbutton("Filter Selection", handler = filterHandler, 
                             cont=sCont)
 }
 addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
@@ -288,27 +288,27 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         filteredPD <- filterProfileData(pd, interval = interval)
     else filteredPD <- pd
     mn$Plot <- list();
-    plotType <<- 'plotCallgraph'
+    attr(win, 'env')$plotType <- 'plotCallgraph'
     mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
         plotProfileCallGraph(filteredPD, style = google.style)
-        plotType <<- 'plotCallgraph'
+        attr(win, 'env')$plotType <- 'plotCallgraph'
     })
     mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
         calleeTreeMap(filteredPD)
-        plotType <<- 'plotTreemap'
+        attr(win, 'env')$plotType <- 'plotTreemap'
     })
     mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
         flameGraph(filteredPD, order="hot")
-        plotType <<- 'plotFlamegraph'
+        attr(win, 'env')$plotType <- 'plotFlamegraph'
     })
     mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
         flameGraph(filteredPD, order="time")
-        plotType <<- 'plotTimegraph'
+        attr(win, 'env')$plotType <- 'plotTimegraph'
     }) 
-    if(exists("widgetMenu"))
-        svalue(widgetMenu) <<- mn
-    else
-        widgetMenu <<- gmenu(mn, container=win)
+    # if(exists("widgetMenu"))
+        # svalue(widgetMenu) <<- mn
+    # else
+    attr(win, 'env')$menu <- gmenu(mn, container=win)
 }
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                         srclines = TRUE, gc = TRUE, maxdepth=10, interval,
@@ -365,7 +365,7 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, gg)
+    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win)
 }
 
 hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
@@ -632,7 +632,7 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win){
         annotName <- path[length(path)]
         parseLine <- parseLineInfo(annotName, srcAnnotate)
         fcnNameRClick <<- parseLine$fcnName
-        do.call(plotType, list())
+        do.call(attr(win, 'env')$plotType, list())
         svalue(fcnAnnot) <- ''
         functionAnnotate(parseLine$fcnName, annotName, path, 
                          srcAnnotate, parseLine$fileName, 
@@ -641,22 +641,22 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win){
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
         plotProfileCallGraph(filtered, style = google.style)
-        plotType <<- 'plotCallgraph'        
+        attr(win, 'env')$plotType <- 'plotCallgraph'        
     }
     plotTreemap <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
         calleeTreeMap(filtered)    
-        plotType <<- 'plotTreemap'        
+        attr(win, 'env')$plotType <- 'plotTreemap'        
     }
     plotFlamegraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
         flameGraph(filtered, order="hot")
-        plotType <<- 'plotFlamegraph'
+        attr(win, 'env')$plotType <- 'plotFlamegraph'
     }
     plotTimegraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
         flameGraph(filtered, order="time")
-        plotType <<- 'plotTimegraph'        
+        attr(win, 'env')$plotType <- 'plotTimegraph'        
     }
     ml <- list()
     ml[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=plotCallgraph)
