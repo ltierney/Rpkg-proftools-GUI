@@ -183,6 +183,15 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                                    container=buttonCont, horizontal=T,
                                    handler=checkHandler, action=passedList)
         addSpinners(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
+        spinnerCont <- gpanedgroup(container=group)
+        spinnerFiller <- ggroup(container=spinnerCont)
+        spinnerGroup <- ggroup(container=spinnerCont)
+        svalue(spinnerCont) <- .5
+        glabel("Max Nodes: ", container=spinnerGroup)
+        maxnodes <- gspinbutton(from=5, to=200, by=1, value=30, cont=spinnerGroup)
+        glabel("Drop Threshold: ", container=spinnerGroup)
+        dropBelow <- gspinbutton(from=0, to=99, by=1, value=0, cont=spinnerGroup)
+        trimCallgraph <- gbutton("Show trimmed Callgraph", cont=spinnerGroup)
         if(!is.null(interval))
             filteredPD <- filterProfileData(pd, interval = interval)
         else filteredPD <- pd
@@ -205,16 +214,18 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
             srcAnnotate <- attemptAnnot()
         }
         if(treeType=="funSum")
-            funSumTree(filteredPD, value, self, srclines, gc, srcAnnotate, win,
-                       group)
+            funSumTree(filteredPD, value, self, srclines, gc, srcAnnotate, 
+                       maxnodes, dropBelow, trimCallgraph, win, group)
         else
             hotPathsTree(filteredPD, value, self, srclines, gc, maxdepth, 
-                         srcAnnotate, win, group)
+                         srcAnnotate, maxnodes, dropBelow, trimCallgraph, win, 
+                         group)
         update(win)
     }
     addMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
     plot.new()
-    plotProfileCallGraph(pd, style = google.style)
+    plotProfileCallGraph(pd, style = google.style, maxnodes = svalue(maxnodes),
+                         total.pct = svalue(dropBelow))
 }
 
 addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
@@ -346,7 +357,8 @@ stopIfEmpty <- function(pd, group){
 }
 
 funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                       srclines = TRUE, gc = TRUE, srcAnnotate, win, group){
+                       srclines = TRUE, gc = TRUE, srcAnnotate,maxnodes,
+                       dropBelow, trimCallgraph, win, group){
     treeType <- "funSum"
     callSum <- callSummary(pd, byTotal = TRUE, value, srclines, gc)
     row.names(callSum) <- paste(" ", row.names(callSum), sep="")
@@ -365,12 +377,13 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win)
+    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
+                dropBelow, trimCallgraph,gg, win)
 }
 
 hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                          srclines = TRUE, gc = TRUE, maxdepth = 10, srcAnnotate,
-                         win, group){
+                         maxnodes, dropBelow, trimCallgraph, win, group){
     treeType <- "hotPaths"
     attr(win, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines, gc, maxdepth)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
@@ -386,7 +399,8 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win)
+    addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
+                dropBelow, trimCallgraph, gg, win)
 }
 
 parseOffspring <- function(path, treetype, win, id=NULL){
@@ -619,7 +633,8 @@ parseLineInfo <- function(fcnName, srcAnnotate){
     list(fcnName=fcnName,lineNumber=lineNumber,fileName=fileName)
 }
 
-addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win){
+addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
+                       dropBelow, trimCallgraph, gg, win){
     
     addHandlerClicked(tree, handler=function(h,...) {
         visible(gg) <- TRUE
@@ -640,7 +655,9 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win){
     }, action=fcnAnnot)
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
-        plotProfileCallGraph(filtered, style = google.style)
+        plotProfileCallGraph(filtered, style = google.style,
+                             maxnodes = svalue(maxnodes), 
+                             total.pct = svalue(dropBelow))
         attr(win, 'env')$plotType <- 'plotCallgraph'        
     }
     plotTreemap <- function(h, ...){
@@ -658,6 +675,7 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, gg, win){
         flameGraph(filtered, order="time")
         attr(win, 'env')$plotType <- 'plotTimegraph'        
     }
+    addHandlerClicked(trimCallgraph, plotCallgraph)
     ml <- list()
     ml[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=plotCallgraph)
     ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=plotTreemap)    
