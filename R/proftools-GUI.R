@@ -156,7 +156,10 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                           self = FALSE, srclines = TRUE, gc = TRUE,
                           maxdepth = 10, interval, treeType="funSum", win){
     group <- ggroup(horizontal=FALSE,container=win)
-    attr(win, 'env') <- new.env()
+    # we use if statement below to preserve the menu if it exists
+    # if it does, we modify its svalue later
+    if(is.null(attr(win, 'env')))
+        attr(win, 'env') <- new.env()
     attr(win, 'env')$self.gc <- c(self, gc)
     if(!is.null(pd)){
         buttonCont <- ggroup(container=group)
@@ -179,12 +182,12 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
             checked <- checked[-2]
             gc <- FALSE
         }
-        checkBox <- gcheckboxgroup(checkBoxes, checked=checked, 
+        gcheckboxgroup(checkBoxes, checked=checked, 
                                    container=buttonCont, horizontal=T,
                                    handler=checkHandler, action=passedList)
         addSpinners(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
         spinnerCont <- gpanedgroup(container=group)
-        spinnerFiller <- ggroup(container=spinnerCont)
+        ggroup(container=spinnerCont)
         spinnerGroup <- ggroup(container=spinnerCont)
         svalue(spinnerCont) <- .5
         glabel("Max Nodes: ", container=spinnerGroup)
@@ -316,10 +319,14 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         flameGraph(filteredPD, order="time")
         attr(win, 'env')$plotType <- 'plotTimegraph'
     }) 
-    # if(exists("widgetMenu"))
-        # svalue(widgetMenu) <<- mn
-    # else
-    attr(win, 'env')$menu <- gmenu(mn, container=win)
+
+        # trying the below was problematic because 'menu' object exists by default
+        # if(exists("menu", envir = attr(win, 'env')))
+        # svalue(attr(win, 'env')$menu) <- mn
+    if(exists("m", envir = attr(win, 'env')))
+        svalue(attr(win, 'env')$m) <- mn
+    else
+        attr(win, 'env')$m <- gmenu(mn, container=win)
 }
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                         srclines = TRUE, gc = TRUE, maxdepth=10, interval,
