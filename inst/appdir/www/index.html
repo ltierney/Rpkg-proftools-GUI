@@ -153,6 +153,7 @@ function makeTrees(){
   </script>
   <style>
   #fileName{font-weight: bold; position: absolute; top:638px; left:10px;}
+  #trimCallgraph{position: absolute; top:230px; right:20px;}
   .red{color:red}
   .hidden{display:none}
   
@@ -215,8 +216,10 @@ function makeTrees(){
 <div style="margin:20px 0 40px 0" id="filterSlider"> </div>
  <button type="button" id="filter" class="flat-button">Filter Selection</button> 
 
-
-
+<div id="trimCallgraph">
+Max Nodes: <input type="text" id="maxNodes" name="maxNodes" value="30"/>
+Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
+</div>
     <input type="text" id="fcnName" name="fcnName" value="" class="hidden"/>
      <input type="text" id="treeType" name="treeType" value="" class="hidden"/>
 	<input type="text" id="plotType" name="plotType" value="" class="hidden"/>

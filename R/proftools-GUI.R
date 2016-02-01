@@ -385,7 +385,7 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
-                dropBelow, trimCallgraph,gg, win)
+                dropBelow, trimCallgraph, gg, win)
 }
 
 hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
@@ -502,9 +502,9 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     path <- system.file("appdir", package="proftoolsGUI")
     # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
-    index[207] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    index[208] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[212:214] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+    index[213:215] <- paste0(c('<input id="total" type="hidden" name="count" value="',
                                '<input id="self" type="checkbox" name="self" value="1"',
                                '<input id="gc" type="checkbox" name="gc" value="1" '),
                              c(pd$total, checked), c('">', '> Self', '> GC'))
@@ -660,6 +660,10 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                          srcAnnotate, parseLine$fileName, 
                          parseLine$lineNumber, treeType, fcnAnnot, win)
     }, action=fcnAnnot)
+    # addHandlerClicked(gg, handler=function(h,...) {
+        # print(str(h$x))
+        # cat("hi")
+    # })
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
         plotProfileCallGraph(filtered, style = google.style,
@@ -763,12 +767,16 @@ myShiny <- function(input, output, session) {
         }
     })
     output$plot <- shiny::renderPlot({
+        maxNodes <- as.numeric(input$maxNodes)
+        dropBelow <- as.numeric(input$dropBelow)
         if(nchar(input$fcnName)){
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
             filtered <- filterProfileData(pd, focus = parseLine$fcnName)
             if(input$plotType == 'plotCallgraph')
-                plotProfileCallGraph(filtered, style = google.style)
+                plotProfileCallGraph(filtered, style = google.style,
+                                     maxnodes = maxNodes,
+                                     total.pct = dropBelow)
             else if(input$plotType == 'plotTreemap')
                 calleeTreeMap(filtered)
             else if(input$plotType == 'plotFlamegraph')
@@ -777,7 +785,9 @@ myShiny <- function(input, output, session) {
                 flameGraph(filtered, order="time")
         }
         else if(input$plotType == 'plotCallgraph')
-            plotProfileCallGraph(pd, style = google.style)
+            plotProfileCallGraph(pd, style = google.style, 
+                                 maxnodes = maxNodes,
+                                 total.pct = dropBelow)
         else if(input$plotType == 'plotTreemap')
             calleeTreeMap(pd)
         else if(input$plotType == 'plotFlamegraph')
