@@ -304,19 +304,19 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     mn$Plot <- list();
     attr(win, 'env')$plotType <- 'plotCallgraph'
     mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
-        plotProfileCallGraph(filteredPD, style = google.style)
+        attr(win, 'env')$plotObj <- plotProfileCallGraph(filteredPD, style = google.style)
         attr(win, 'env')$plotType <- 'plotCallgraph'
     })
     mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
-        calleeTreeMap(filteredPD)
+        attr(win, 'env')$plotObj <- calleeTreeMap(filteredPD)
         attr(win, 'env')$plotType <- 'plotTreemap'
     })
     mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
-        flameGraph(filteredPD, order="hot")
+        attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="hot")
         attr(win, 'env')$plotType <- 'plotFlamegraph'
     })
     mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
-        flameGraph(filteredPD, order="time")
+        attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="time")
         attr(win, 'env')$plotType <- 'plotTimegraph'
     }) 
 
@@ -660,10 +660,20 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                          srcAnnotate, parseLine$fileName, 
                          parseLine$lineNumber, treeType, fcnAnnot, win)
     }, action=fcnAnnot)
-    # addHandlerClicked(gg, handler=function(h,...) {
-        # print(str(h$x))
-        # cat("hi")
-    # })
+    addHandlerClicked(gg, handler=function(h,...) {
+        if(attr(win, 'env')$plotType != 'plotCallgraph'){
+            p <- attr(win, 'env')$plotObj
+            idx <- which(h$x >= p$left & h$x <= p$right &
+                         h$y >= p$bottom & h$y <= p$top)
+            if (length(idx) > 0) 
+                if(attr(win, 'env')$plotType == 'plotTreemap')
+                    tooltip(h$obj) <- p$label[idx][length(p$label[idx])]
+                else
+                    tooltip(h$obj) <- p$label[idx]
+        }
+        
+
+    })
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
         plotProfileCallGraph(filtered, style = google.style,
@@ -673,17 +683,17 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
     }
     plotTreemap <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
-        calleeTreeMap(filtered)    
+        attr(win, 'env')$plotObj <- calleeTreeMap(filtered)    
         attr(win, 'env')$plotType <- 'plotTreemap'        
     }
     plotFlamegraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
-        flameGraph(filtered, order="hot")
+        attr(win, 'env')$plotObj <- flameGraph(filtered, order="hot")
         attr(win, 'env')$plotType <- 'plotFlamegraph'
     }
     plotTimegraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
-        flameGraph(filtered, order="time")
+        attr(win, 'env')$plotObj <- flameGraph(filtered, order="time")
         attr(win, 'env')$plotType <- 'plotTimegraph'        
     }
     addHandlerClicked(trimCallgraph, plotCallgraph)
