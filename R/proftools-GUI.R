@@ -667,7 +667,7 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                          h$y >= p$bottom & h$y <= p$top)
             if (length(idx) > 0) 
                 if(attr(win, 'env')$plotType == 'plotTreemap')
-                    tooltip(h$obj) <- p$label[idx][length(p$label[idx])]
+                    tooltip(h$obj) <- p$label[idx][-1]
                 else
                     tooltip(h$obj) <- p$label[idx]
         }
