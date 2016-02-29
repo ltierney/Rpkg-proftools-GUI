@@ -502,9 +502,9 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     path <- system.file("appdir", package="proftoolsGUI")
     # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
-    index[208] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    index[221] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[213:215] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+    index[226:228] <- paste0(c('<input id="total" type="hidden" name="count" value="',
                                '<input id="self" type="checkbox" name="self" value="1"',
                                '<input id="gc" type="checkbox" name="gc" value="1" '),
                              c(pd$total, checked), c('">', '> Self', '> GC'))
@@ -666,8 +666,15 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
             idx <- which(h$x >= p$left & h$x <= p$right &
                          h$y >= p$bottom & h$y <= p$top)
             if (length(idx) > 0) 
-                if(attr(win, 'env')$plotType == 'plotTreemap')
-                    tooltip(h$obj) <- p$label[idx][-1]
+                if(attr(win, 'env')$plotType == 'plotTreemap'){
+                    # we skip the first element because it's empty
+                    len <- length(p$label[idx])
+                    if(len < 12)
+                        tooltip(h$obj) <- p$label[idx][-1]
+                    else
+                        tooltip(h$obj) <- c(p$label[idx][2:6], "...",
+                                            p$label[idx][(len-4):len])
+                }
                 else
                     tooltip(h$obj) <- p$label[idx]
         }
@@ -758,7 +765,7 @@ myShiny <- function(input, output, session) {
                                                  self = input$self,
                                                  gc = input$gc))
     })
-
+        
     output$fcnAnnot <- shiny::renderPrint({
         if(nchar(input$fcnName)){
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
@@ -776,6 +783,56 @@ myShiny <- function(input, output, session) {
                 cat(paste('<p id="fileName">Filename: ', parseLine$fileName, '</p>'))
         }
     })
+    
+    # plotObj <- reactive({
+        # maxNodes <- as.numeric(input$maxNodes)
+        # dropBelow <- as.numeric(input$dropBelow)
+        # if(nchar(input$fcnName)){
+            # path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
+            # parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
+            # filtered <- filterProfileData(pd, focus = parseLine$fcnName)
+            # if(input$plotType == 'plotCallgraph')
+                # plotProfileCallGraph(filtered, style = google.style,
+                                     # maxnodes = maxNodes,
+                                     # total.pct = dropBelow)
+            # else if(input$plotType == 'plotTreemap')
+                # calleeTreeMap(filtered)
+            # else if(input$plotType == 'plotFlamegraph')
+                # flameGraph(filtered, order="hot")
+            # else if(input$plotType == 'plotTimegraph')
+                # flameGraph(filtered, order="time")
+        # }
+        # else if(input$plotType == 'plotCallgraph')
+            # plotProfileCallGraph(pd, style = google.style, 
+                                 # maxnodes = maxNodes,
+                                 # total.pct = dropBelow)
+        # else if(input$plotType == 'plotTreemap')
+            # calleeTreeMap(pd)
+        # else if(input$plotType == 'plotFlamegraph')
+            # flameGraph(pd, order="hot")
+        # else if(input$plotType == 'plotTimegraph')
+            # flameGraph(pd, order="time")
+    # })
+    plotObj <- NULL
+    output$testing <- shiny::renderPrint({
+        if(input$plotType != 'plotCallgraph'){
+            p <- plotObj
+            idx <- which(input$plot_hover$x >= p$left & input$plot_hover$x <= p$right &
+                         input$plot_hover$y >= p$bottom & input$plot_hover$y <= p$top)
+            if (length(idx) > 0) 
+                if(input$plotType == 'plotTreemap'){
+                    # we skip the first element because it's empty
+                    len <- length(p$label[idx])
+                    if(len < 12)
+                        p$label[idx][-1]
+                    else
+                        c(p$label[idx][2:6], "...",
+                                            p$label[idx][(len-4):len])
+                }
+                else
+                    p$label[idx]
+        }
+    })    
     output$plot <- shiny::renderPlot({
         maxNodes <- as.numeric(input$maxNodes)
         dropBelow <- as.numeric(input$dropBelow)
@@ -788,22 +845,22 @@ myShiny <- function(input, output, session) {
                                      maxnodes = maxNodes,
                                      total.pct = dropBelow)
             else if(input$plotType == 'plotTreemap')
-                calleeTreeMap(filtered)
+                plotObj <<- calleeTreeMap(filtered)
             else if(input$plotType == 'plotFlamegraph')
-                flameGraph(filtered, order="hot")
+                plotObj <<- flameGraph(filtered, order="hot")
             else if(input$plotType == 'plotTimegraph')
-                flameGraph(filtered, order="time")
+                plotObj <<- flameGraph(filtered, order="time")
         }
         else if(input$plotType == 'plotCallgraph')
             plotProfileCallGraph(pd, style = google.style, 
                                  maxnodes = maxNodes,
                                  total.pct = dropBelow)
         else if(input$plotType == 'plotTreemap')
-            calleeTreeMap(pd)
+            plotObj <<- calleeTreeMap(pd)
         else if(input$plotType == 'plotFlamegraph')
-            flameGraph(pd, order="hot")
+            plotObj <<- flameGraph(pd, order="hot")
         else if(input$plotType == 'plotTimegraph')
-            flameGraph(pd, order="time")
+            plotObj <<- flameGraph(pd, order="time")
   })    
 
 }
