@@ -824,13 +824,13 @@ myShiny <- function(input, output, session) {
                     # we skip the first element because it's empty
                     len <- length(p$label[idx])
                     if(len < 12)
-                        p$label[idx][-1]
+                        cat(paste(p$label[idx][-1], "<br />"))
                     else
-                        c(p$label[idx][2:6], "...",
-                                            p$label[idx][(len-4):len])
+                        cat(paste(c(p$label[idx][2:6], "...",
+                                            p$label[idx][(len-4):len]), "<br />"))
                 }
                 else
-                    p$label[idx]
+                    cat(p$label[idx])
         }
     })    
     output$plot <- shiny::renderPlot({
