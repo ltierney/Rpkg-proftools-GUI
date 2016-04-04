@@ -225,7 +225,6 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                          group)
         update(win)
     }
-    addMenu(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
     plot.new()
     plotProfileCallGraph(pd, style = google.style, maxnodes = svalue(maxnodes),
                          total.pct = svalue(dropBelow))
@@ -262,17 +261,86 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     gbutton("Filter Selection", handler = filterHandler, 
                             cont=sCont)
 }
+# addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
+                    # srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
+                    # win, group){
+    # browseStack <- function(h, ...){
+        # stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
+                             # list("Stack files"=list(patterns=c("*.out", "*.txt"))))
+        # pd <- readProfileData(stackBrowse)
+        # stopIfEmpty(pd, group)
+        # delete(win, group)
+        # processWidget(pd, value, self, srclines, gc, maxdepth, interval, 
+                      # treeType, win)
+    # }
+    
+    # browseR <- function(h, ...){
+        # sourceBrowse <- gfile("Source and profile an R file", quote=FALSE,
+                              # filter = list("Stack files"=
+                                            # list(patterns=c("*.R", "*.txt"))))
+        # Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
+        # source(sourceBrowse)
+        # Rprof(NULL)
+        # pd <- readProfileData(tmp)
+        # stopIfEmpty(pd, group)
+        # delete(win, group)
+        # processWidget(filterProfileData(pd, focus = "source"), value, self,
+                      # srclines, gc, maxdepth, interval, treeType, win)
+        # unlink(tmp)
+    # }    
+    # profileRCode <- function(h, ...){
+        # profileCode(pd, value, self, srclines, gc, maxdepth, NULL, treeType, win, group)
+    # }    
+    # mn <- list(); mn$File <- list();
+    # mn$File[['Select a stack file']] <- gaction("Select a stack file", 
+                                                # handler=browseStack) 
+    # mn$File[['Source an R file']] <- gaction("Source an R file", handler=browseR)   
+    # mn$File[['Profile some R code']] <- gaction("Profile some R code", 
+                                                # handler=profileRCode) 
+    # if(!is.null(interval))
+        # filteredPD <- filterProfileData(pd, interval = interval)
+    # else filteredPD <- pd
+    # mn$Plot <- list();
+    # attr(win, 'env')$plotType <- 'plotCallgraph'
+    # mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
+        # visible(gg) <- TRUE
+        # attr(win, 'env')$plotObj <- plotProfileCallGraph(filteredPD, style = google.style)
+        # attr(win, 'env')$plotType <- 'plotCallgraph'
+    # })
+    # mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
+        # visible(gg) <- TRUE
+        # attr(win, 'env')$plotObj <- calleeTreeMap(filteredPD)
+        # attr(win, 'env')$plotType <- 'plotTreemap'
+    # })
+    # mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
+        # visible(gg) <- TRUE
+        # attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="hot")
+        # attr(win, 'env')$plotType <- 'plotFlamegraph'
+    # })
+    # mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
+        # visible(gg) <- TRUE
+        # attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="time")
+        # attr(win, 'env')$plotType <- 'plotTimegraph'
+    # }) 
+
+        # trying the below was problematic because 'menu' object exists by default
+        # if(exists("menu", envir = attr(win, 'env')))
+        # svalue(attr(win, 'env')$menu) <- mn
+    # if(exists("m", envir = attr(win, 'env')))
+        # svalue(attr(win, 'env')$m) <- mn
+    # else
+        # attr(win, 'env')$m <- gmenu(mn, container=win)
+# }
 addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                    srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
-                    win, group){
+                    srclines = TRUE, gc = TRUE, maxdepth=10, treeType, 
+                    win, group, gg){
     browseStack <- function(h, ...){
         stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
                              list("Stack files"=list(patterns=c("*.out", "*.txt"))))
         pd <- readProfileData(stackBrowse)
         stopIfEmpty(pd, group)
         delete(win, group)
-        processWidget(pd, value, self, srclines, gc, maxdepth, interval, 
-                      treeType, win)
+        processWidget(pd, value, self, srclines, gc, maxdepth, treeType, win)
     }
     
     browseR <- function(h, ...){
@@ -286,7 +354,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         stopIfEmpty(pd, group)
         delete(win, group)
         processWidget(filterProfileData(pd, focus = "source"), value, self,
-                      srclines, gc, maxdepth, interval, treeType, win)
+                      srclines, gc, maxdepth, treeType, win)
         unlink(tmp)
     }    
     profileRCode <- function(h, ...){
@@ -298,25 +366,27 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     mn$File[['Source an R file']] <- gaction("Source an R file", handler=browseR)   
     mn$File[['Profile some R code']] <- gaction("Profile some R code", 
                                                 handler=profileRCode) 
-    if(!is.null(interval))
-        filteredPD <- filterProfileData(pd, interval = interval)
-    else filteredPD <- pd
+
     mn$Plot <- list();
     attr(win, 'env')$plotType <- 'plotCallgraph'
     mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
-        attr(win, 'env')$plotObj <- plotProfileCallGraph(filteredPD, style = google.style)
+        visible(gg) <- TRUE
+        attr(win, 'env')$plotObj <- plotProfileCallGraph(pd, style = google.style)
         attr(win, 'env')$plotType <- 'plotCallgraph'
     })
     mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
-        attr(win, 'env')$plotObj <- calleeTreeMap(filteredPD)
+        visible(gg) <- TRUE
+        attr(win, 'env')$plotObj <- calleeTreeMap(pd)
         attr(win, 'env')$plotType <- 'plotTreemap'
     })
     mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
-        attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="hot")
+        visible(gg) <- TRUE
+        attr(win, 'env')$plotObj <- flameGraph(pd, order="hot")
         attr(win, 'env')$plotType <- 'plotFlamegraph'
     })
     mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
-        attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="time")
+        visible(gg) <- TRUE
+        attr(win, 'env')$plotObj <- flameGraph(pd, order="time")
         attr(win, 'env')$plotType <- 'plotTimegraph'
     }) 
 
@@ -384,6 +454,7 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
+    addMenu(pd, value, self, srclines, gc, maxdepth=10, treeType, win, group, gg)
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                 dropBelow, trimCallgraph, gg, win)
 }
@@ -406,6 +477,7 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
+    addMenu(pd, value, self, srclines, gc, maxdepth=10, treeType, win, group, gg)
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                 dropBelow, trimCallgraph, gg, win)
 }
@@ -442,11 +514,12 @@ parseSon <- function(i, offspringDF, path, id, treetype, win){
     offspringDF$self[i], "\",\"GC\":\"", offspringDF$GC[i], "\",\"GCself\":\"",
     offspringDF$GC.Self[i], "\"", parent, sep="")
     if(length(path) && (treetype == "funSum")){
-        lastTwo <- c(getFname(path[length(path)]), 
-                     getFname(as.character(offspringDF$Function[i])))
-        makeSons <- !(any(as.logical(lapply(cycles, vecIn, lastTwo)), na.rm=TRUE) 
-                      || (lastTwo[1] == lastTwo[2]) 
-                      || (length(path) >= 2))
+        # lastTwo <- c(getFname(path[length(path)]), 
+                     # getFname(as.character(offspringDF$Function[i])))
+        # makeSons <- !(any(as.logical(lapply(cycles, vecIn, lastTwo)), na.rm=TRUE) 
+                      # || (lastTwo[1] == lastTwo[2]) 
+                      # || (length(path) >= 2))
+        makeSons <- !(length(path) >= 2)
     }
     else
         makeSons <- TRUE
@@ -460,8 +533,8 @@ parseSon <- function(i, offspringDF, path, id, treetype, win){
 }
 
 generateJSON <- function(pd, path, winHotpaths, winFunsum){
-    cycles <- profileDataCycles(pd, TRUE)
-    cycles <<- lapply(cycles, function(x) c(x, x[1]))
+    # cycles <- profileDataCycles(pd, TRUE)
+    # cycles <<- lapply(cycles, function(x) c(x, x[1]))
     write(c("{\"rows\":[",parseOffspring(c(), 'hotpaths', winHotpaths),"]}"), 
           paste(path, "/www/hotpaths.JSON", sep=""))         
     write(c("{\"rows\":[",parseOffspring(c(), 'funSum', winFunsum),"]}"), 
@@ -642,7 +715,7 @@ parseLineInfo <- function(fcnName, srcAnnotate){
 
 addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                        dropBelow, trimCallgraph, gg, win){
-    
+    fcnNameRClick <- NULL
     addHandlerClicked(tree, handler=function(h,...) {
         visible(gg) <- TRUE
         fcnAnnot <- h$action
