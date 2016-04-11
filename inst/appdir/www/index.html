@@ -19,6 +19,9 @@
   <script src="shared/shiny.js" type="text/javascript"></script>
   <link rel="stylesheet" type="text/css" href="shared/shiny.css"/> <link rel="stylesheet" type="text/css" href="styles/jquery.qtip.min.css"/> 
   <script>
+window.onbeforeunload = function(e) {
+    $("#closing").val('closing'); setTimeout(function(){}, 2000);
+};
 $(document).ready(function() {
 
    $('#plot').qtip({ // Grab some elements to apply the tooltip to
@@ -223,8 +226,8 @@ function makeTrees(){
   <option value="time">time</option>
   <option value="hits">hits</option>
 </select> 
-<input id="total" type="hidden" name="count" value="399">
-<input id="self" type="checkbox" name="self" value="1"> Self
+<input id="total" type="hidden" name="count" value="894">
+<input id="self" type="checkbox" name="self" value="1" checked> Self
 <input id="gc" type="checkbox" name="gc" value="1" > GC
 <div style="margin:20px 0 40px 0" id="filterSlider"> </div>
  <button type="button" id="filter" class="flat-button">Filter Selection</button> 
@@ -238,6 +241,7 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 	<input type="text" id="plotType" name="plotType" value="" class="hidden"/>
     <input type="text" id="sliderUpper" name="sliderUpper" value="" class="hidden"/>
     <input type="text" id="sliderLower" name="sliderLower" value="" class="hidden"/>
+    <input type="text" id="closing" name="closing" value="" class="hidden"/>
     <div id="tabs1-funsum">
     <div id="funSum" style="float:left;width:800px;height:400px">
 	<table id="funsum" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
@@ -277,11 +281,11 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 <tr>
 <th field="name" width="220">Name</th>
 <th field="total" width="150">Total</th>
-<span class="gcself">
+
 <th field="self" width="150">Self</th>
 <th field="GC" width="150">GC</th>
 <th field="GCself" width="150">GC.Self</th>
-</span>
+
 </tr>
 		</thead>
 	</table>
