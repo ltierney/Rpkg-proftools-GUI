@@ -572,8 +572,8 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
         # cols[2:3] <- ""
     # if(!self)
         # cols[c(1,3)] <- ""
-    # path <- system.file("appdir", package="proftoolsGUI")
-    path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+    path <- system.file("appdir", package="proftoolsGUI")
+    # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
     index[224] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
@@ -829,8 +829,8 @@ myShiny <- function(input, output, session) {
     shiny::observe({
         filteredPD <- filtered()
         srcAnnotate <<- annotateSource(filteredPD, input$value, input$gc, show=FALSE)
-        # path <- system.file("appdir", package="proftoolsGUI")
-        path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+        path <- system.file("appdir", package="proftoolsGUI")
+        # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
         wins <- dataInput()
         generateJSON(filteredPD, path, wins$winHotpaths, wins$winFunsum)
         session$sendCustomMessage(type = 'testmessage', 
