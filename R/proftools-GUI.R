@@ -136,9 +136,19 @@ offspringFunSum <- function(path, win) {
     }
     return(offspringDF)
 }
-
+                     
+startGUI <- function(pd = NULL, method = c("gwidgets", "shiny"),
+                     value = c("pct", "time", "hits"), self = FALSE, 
+                     gc = TRUE, srclines = TRUE){
+    if(method == "gwidgets")
+        startWidget(pd, value, self, gc, srclines)
+    else if(method == "shiny")
+        runShiny(pd, value, self, gc, srclines)
+}
+                        
+                        
 startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
-                        self = FALSE, srclines = TRUE, gc = TRUE,
+                        self = FALSE, gc = TRUE, srclines = TRUE,
                         maxdepth = 10, interval = NULL,
                         treeType="funSum", toolkit="RGtk2"){
     if (is.character(pd))
@@ -417,7 +427,7 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         mydepth <- length(sys.calls())
-        pd <- skipPD(pd, mydepth+4)
+        pd <- proftools::skipPD(pd, mydepth+4)
         delete(win, group)
         dispose(codeWindow)
         processWidget(pd, value, self, srclines, gc, maxdepth, NULL, treeType,
@@ -550,16 +560,16 @@ shinyPD <- local({
     }
 })
 
-shinyPD <- local({
-    pd <- NULL
+shinyFilename <- local({
+    shinyFilename <- NULL
     function(new) {
         if (! missing(new))
-            pd <<- new
-        pd
+            shinyFilename <<- new
+        shinyFilename
     }
 })
 runShiny <- function(pd, value = c("pct", "time", "hits"),
-                     self = FALSE, srclines = TRUE, gc = TRUE,
+                     self = FALSE, gc = TRUE, srclines = TRUE,
                      maxdepth = 10){
     pd$files <- normalizePath(pd$files)
     shinyPD(pd)
@@ -691,7 +701,7 @@ findFunction <- function(i, fcnName, fcnAnnot, srcAnnotate){
             outputAnnot(srcCode[(ends+1):fileEnd], fcnAnnot=fcnAnnot,
                         where="at.cursor")
         ## fileName used in Shiny
-        fileName <<- names(srcAnnotate)[i]
+        shinyFilename(names(srcAnnotate)[i])
         return(TRUE)
     }
     else
@@ -805,14 +815,15 @@ checkHandler <- function(h, ...){
 myShiny <- function(input, output, session) {
     pd <- shinyPD()
     
-    filtered <- reactive({
+    filtered <- shiny::reactive({
         if(input$sliderLower != '')
             filterProfileData(pd, interval = c(input$sliderLower, input$sliderUpper))
         else
             pd
     })
     
-    dataInput <- reactive({
+    
+    dataInput <- shiny::reactive({
         filteredPD <- filtered()
         winHotpaths <- winFunsum <- c(1)
         attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
@@ -839,11 +850,16 @@ myShiny <- function(input, output, session) {
                                                  gc = input$gc))
     })
     session$onSessionEnded(function() {
-        stopApp()
+        shiny::stopApp()
     })
     shiny::observe({
         if(input$closing == 'closing')
-            stopApp()
+            shiny::stopApp()
+    })
+    fName <- shiny::reactive({
+        if(nchar(input$fcnName))
+            fileName <- shinyFilename()
+        fileName
     })
     output$fcnAnnot <- shiny::renderPrint({
         if(nchar(input$fcnName)){
@@ -856,6 +872,8 @@ myShiny <- function(input, output, session) {
             functionAnnotate(parseLine$fcnName, path[length(path)], path,
                              srcAnnotate, parseLine$fileName, 
                              parseLine$lineNumber, "hotPaths", NULL, win)
+            
+            fileName <- fName()
             if(!is.null(fileName))
                 cat(paste('<p id="fileName">Filename: ', fileName, '</p>'))
             else if(!is.null(parseLine$fileName))
