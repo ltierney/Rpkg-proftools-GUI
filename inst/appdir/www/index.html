@@ -87,18 +87,28 @@ $('#tab-container').easytabs();
 function makeFunsum(){
     $('#funsum').treegrid({
                     onClickCell: function(field,row){
-                        tempRow = row.id;
-                        path = row.name; 
-                        for(i=0; i<row.id.length-1; i++){
-                            parentRow = $('#funsum').treegrid('getParent', tempRow);
-                            path += ',' + parentRow.name;
-                            tempRow = parentRow.id
+                        tempRow = row.id; 
+                        selected = $('#funsum').treegrid('getSelected');
+                        if(selected != null && selected.id == tempRow){
+                            $('#funsum').treegrid('unselectAll');
+                            Shiny.unbindAll();
+                            $("#treeType").val('funsum');
+                            $("#fcnName").val('');
+                            Shiny.bindAll();
+                            throw new Error('Just to prevent re-selection of row'); }
+                        else{
+                            path = row.name; 
+                            for(i=0; i<row.id.length-1; i++){
+                                parentRow = $('#funsum').treegrid('getParent', tempRow);
+                                path += ',' + parentRow.name;
+                                tempRow = parentRow.id
+                            }
+                            Shiny.unbindAll();
+                            $("#treeType").val('funsum');
+                            $("#fcnName").val(path);
+                            Shiny.bindAll();
                         }
-                        Shiny.unbindAll();
-                        $("#treeType").val('funsum');
-                        $("#fcnName").val(path);
-                        Shiny.bindAll();
-                        }
+                    }
                 });
 
     setTimeout(
@@ -110,17 +120,27 @@ function makeFunsum(){
 function makeHotpaths(){
     $('#hotpaths').treegrid({
                     onClickCell: function(field,row){
-                        tempRow = row.id;
-                        path = row.name; 
-                        for(i=0; i<row.id.length-1; i++){
-                            parentRow = $('#hotpaths').treegrid('getParent', tempRow);
-                            path += ',' + parentRow.name;
-                            tempRow = parentRow.id
+                        tempRow = row.id; 
+                        selected = $('#hotpaths').treegrid('getSelected');
+                        if(selected != null && selected.id == tempRow){
+                            $('#hotpaths').treegrid('unselectAll');
+                            Shiny.unbindAll();
+                            $("#treeType").val('hotpaths');
+                            $("#fcnName").val('');
+                            Shiny.bindAll();
+                            throw new Error('Just to prevent re-selection of row'); }
+                        else{
+                            path = row.name; 
+                            for(i=0; i<row.id.length-1; i++){
+                                parentRow = $('#hotpaths').treegrid('getParent', tempRow);
+                                path += ',' + parentRow.name;
+                                tempRow = parentRow.id
+                            }
+                            Shiny.unbindAll();
+                            $("#treeType").val('hotpaths');
+                            $("#fcnName").val(path);
+                            Shiny.bindAll();
                         }
-                        Shiny.unbindAll();
-                        $("#treeType").val('hotpaths');
-                        $("#fcnName").val(path);
-                        Shiny.bindAll();
                     }
                 });
     setTimeout(
@@ -182,7 +202,7 @@ function makeTrees(){
 .tab-container .panel-container { background: #fff; border: solid #666 1px; padding: 10px; -moz-border-radius: 0 4px 4px 4px; -webkit-border-radius: 0 4px 4px 4px; }
   </style>
 </head>
-<body>
+<body> 
 <div id="tab-container" class="tab-container">
   <ul class='etabs'>
     <li class='tab'><a href="#tabs1-funsum">Function Summary</a></li>
