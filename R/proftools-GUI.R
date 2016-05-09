@@ -875,7 +875,7 @@ myShiny <- function(input, output, session) {
             
             fileName <- fName()
             if(!is.null(parseLine$fileName))
-                cat(paste('<p id="fileName">Filename: ', parseLine$fileName, '</p>'))
+                cat(paste('<p class="panel-header" id="fileName">Filename: ', parseLine$fileName, '</p>'))
             else if(!is.null(fileName))
                 cat(paste('<p id="fileName">Filename: ', fileName, '</p>'))
 
