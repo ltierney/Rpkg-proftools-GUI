@@ -704,8 +704,11 @@ findFunction <- function(i, fcnName, fcnAnnot, srcAnnotate){
         shinyFilename(names(srcAnnotate)[i])
         return(TRUE)
     }
-    else
+    else{
+        shinyFilename(NULL)
         NULL
+    }
+        
 }
 parseLineInfo <- function(fcnName, srcAnnotate){
     hasLine <- regexpr("(", fcnName, fixed=T)
@@ -872,45 +875,21 @@ myShiny <- function(input, output, session) {
             functionAnnotate(parseLine$fcnName, path[length(path)], path,
                              srcAnnotate, parseLine$fileName, 
                              parseLine$lineNumber, "hotPaths", NULL, win)
-            
-            fileName <- fName()
             if(!is.null(parseLine$fileName))
-                cat(paste('<p class="panel-header" id="fileName">Filename: ', parseLine$fileName, '</p>'))
-            else if(!is.null(fileName))
-                cat(paste('<p id="fileName">Filename: ', fileName, '</p>'))
-
+                shinyFilename(parseLine$fileName)
+            cat()
         }
     })
     
-    # plotObj <- reactive({
-        # maxNodes <- as.numeric(input$maxNodes)
-        # dropBelow <- as.numeric(input$dropBelow)
-        # if(nchar(input$fcnName)){
-            # path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
-            # parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
-            # filtered <- filterProfileData(pd, focus = parseLine$fcnName)
-            # if(input$plotType == 'plotCallgraph')
-                # plotProfileCallGraph(filtered, style = google.style,
-                                     # maxnodes = maxNodes,
-                                     # total.pct = dropBelow)
-            # else if(input$plotType == 'plotTreemap')
-                # calleeTreeMap(filtered)
-            # else if(input$plotType == 'plotFlamegraph')
-                # flameGraph(filtered, order="hot")
-            # else if(input$plotType == 'plotTimegraph')
-                # flameGraph(filtered, order="time")
-        # }
-        # else if(input$plotType == 'plotCallgraph')
-            # plotProfileCallGraph(pd, style = google.style, 
-                                 # maxnodes = maxNodes,
-                                 # total.pct = dropBelow)
-        # else if(input$plotType == 'plotTreemap')
-            # calleeTreeMap(pd)
-        # else if(input$plotType == 'plotFlamegraph')
-            # flameGraph(pd, order="hot")
-        # else if(input$plotType == 'plotTimegraph')
-            # flameGraph(pd, order="time")
-    # })
+    output$fileName <- shiny::renderPrint({
+        if(nchar(input$fcnName)){
+            fileName <- fName()
+            cat(paste('Filename: ', fileName))
+        }
+        else
+            cat('Filename: ')
+    })
+    
     plotObj <- NULL
     output$testing <- shiny::renderPrint({
         if(input$plotType != 'plotCallgraph'){

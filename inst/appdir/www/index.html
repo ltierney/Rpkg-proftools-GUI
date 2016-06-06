@@ -188,7 +188,7 @@ function makeTrees(){
 });
   </script>
   <style>
-  #fileName{font-weight: bold; position: absolute; top:607px; left:20px; width: 1297px}
+  #fileName{font-weight: bold; position: absolute; top:630px; left:20px; width: 1297px}
   #trimCallgraph{position: absolute; top:185px; right:20px;}
   .red{color:red}
   .hidden{display:none}
@@ -236,7 +236,7 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
     <input type="text" id="sliderLower" name="sliderLower" value="" class="hidden"/>
     <input type="text" id="closing" name="closing" value="" class="hidden"/>
     <div id="tabs1-funsum">
-    <div id="funSum" style="float:left;width:800px;height:400px:padding-top:60px;">
+    <div id="funSum" style="float:left;width:800px;height:400px:">
 	<table id="funsum" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
     data-options="
                 url: 'funsum.JSON',
@@ -260,7 +260,7 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
     </div>
     </div>
     <div id="tabs1-hotpaths">
-    <div id="hotp" style="float:left;width:800px;height:400px;margin-top:60px;">
+    <div id="hotp" style="float:left;width:800px;height:400px;">
 	<table id="hotpaths" title="Hot Paths" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
 			data-options="
 				url: 'hotpaths.JSON',
@@ -323,7 +323,8 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 		}
 	</script>
     <p style="clear:both; margin-top:15px"></p>
-     <pre id="fcnAnnot" class="shiny-html-output" style="border: 1px double silver;height: 400px; margin-top: 50px;overflow-y:scroll;"></pre>
+    <p id="fileName" class="shiny-text-output panel-header">Filename: </p>
+     <pre id="fcnAnnot" class="shiny-html-output" style="border: 1px double silver;height: 400px; width: 1307px; position:absolute; top:656px;overflow-y:scroll;"></pre>
     <pre id="test2"></pre>
 <div class="shiny-text-output" id="testing"></div>
 </body>
