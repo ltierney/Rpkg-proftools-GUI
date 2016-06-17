@@ -585,9 +585,9 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     path <- system.file("appdir", package="proftoolsGUI")
     # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
-    index[219] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    index[247] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[224:226] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+    index[252:254] <- paste0(c('<input id="total" type="hidden" name="count" value="',
                                '<input id="self" type="checkbox" name="self" value="1"',
                                '<input id="gc" type="checkbox" name="gc" value="1" '),
                              c(pd$total, checked), c('">', '> Self', '> GC'))
