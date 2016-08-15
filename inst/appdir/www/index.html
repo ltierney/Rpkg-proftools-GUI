@@ -37,7 +37,7 @@ $(document).ready(function() {
         text: 'nothing yet'
     }
     });
-    $('#plot').mousemove(function( event ) { $('#plot').qtip('option', 'content.text', $('#testing').text())})
+    $('#plot').mousemove(function( event ) { $('#plot').qtip('option', 'content.text', $('#labelObj').text())})
 function filter10( value, type ){
 	return value % 10 ? 1 : 0;
 }
@@ -177,7 +177,7 @@ function makeHotpaths(){
         }, 1000);
 }
 
-Shiny.addCustomMessageHandler("testmessage",
+Shiny.addCustomMessageHandler("updateTable",
     function(message) {
         makeFunsum();
         makeHotpaths();
@@ -191,6 +191,17 @@ Shiny.addCustomMessageHandler("testmessage",
         });
     }
 );	
+
+Shiny.addCustomMessageHandler("scrollAnnot",
+    function(message) {
+        setTimeout(function(){
+            var contactTopPosition = $("#selectedLine").position().top;
+            $("#fcnAnnot").animate({scrollTop: $("#fcnAnnot").scrollTop()+contactTopPosition});
+        }, 500);
+    }
+);	
+
+
 function makeTrees(){
 
     /*
@@ -248,7 +259,7 @@ function makeTrees(){
   <option value="pct">pct</option> 
   <option value="time">time</option>
   <option value="hits">hits</option>
-</select>  
+</select>   
 <input id="total" type="hidden" name="count" value="894">
 <input id="self" type="checkbox" name="self" value="1" checked> Self
 <input id="gc" type="checkbox" name="gc" value="1" > GC
@@ -320,7 +331,7 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
     <p id="fileName" class="shiny-text-output panel-header">Filename: </p>
      <pre id="fcnAnnot" class="shiny-html-output" style="border: 1px double silver;height: 400px; width: 1307px; position:absolute; top:656px;overflow-y:scroll;"></pre>
     <pre id="test2"></pre>
-<div class="shiny-text-output" id="testing"></div>
+<div class="shiny-text-output" id="labelObj"></div>
 <script> 
   		function myLoadFilter(data,parentId){
 			function setData(){

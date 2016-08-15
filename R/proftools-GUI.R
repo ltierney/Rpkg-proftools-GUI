@@ -568,6 +568,8 @@ shinyFilename <- local({
         shinyFilename
     }
 })
+
+
 runShiny <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, gc = TRUE, srclines = TRUE,
                      maxdepth = 10){
@@ -583,11 +585,11 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     # if(!self)
         # cols[c(1,3)] <- ""
     path <- system.file("appdir", package="proftoolsGUI")
-    # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+    #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
-    index[247] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    index[258] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[252:254] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+    index[263:265] <- paste0(c('<input id="total" type="hidden" name="count" value="',
                                '<input id="self" type="checkbox" name="self" value="1"',
                                '<input id="gc" type="checkbox" name="gc" value="1" '),
                              c(pd$total, checked), c('">', '> Self', '> GC'))
@@ -612,7 +614,7 @@ outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'
         if(is.null(font.attr))
             cat('<br />', paste(output, collapse='<br />'), sep='')
         else
-            cat('<br />', paste('<span class="red">', 
+            cat('<br />', paste('<span id="selectedLine" class="red">', 
                                 paste(output, collapse='<br />'),
                                 '</span>',sep=''), sep='')
     else
@@ -825,7 +827,6 @@ myShiny <- function(input, output, session) {
             pd
     })
     
-    
     dataInput <- shiny::reactive({
         filteredPD <- filtered()
         winHotpaths <- winFunsum <- c(1)
@@ -840,14 +841,20 @@ myShiny <- function(input, output, session) {
         list(winHotpaths = winHotpaths, winFunsum = winFunsum)
     })
     
+    srcAnnotate <- shiny::reactive({
+        filteredPD <- filtered()
+        if(nchar(input$value))
+            temp <- annotateSource(filteredPD, input$value, input$gc, show=FALSE)
+        temp
+    })
+    
     shiny::observe({
         filteredPD <- filtered()
-        srcAnnotate <<- annotateSource(filteredPD, input$value, input$gc, show=FALSE)
         path <- system.file("appdir", package="proftoolsGUI")
-        # path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+        #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
         wins <- dataInput()
         generateJSON(filteredPD, path, wins$winHotpaths, wins$winFunsum)
-        session$sendCustomMessage(type = 'testmessage', 
+        session$sendCustomMessage(type = 'updateTable', 
                                   message = list(value = input$value, 
                                                  self = input$self,
                                                  gc = input$gc))
@@ -866,6 +873,8 @@ myShiny <- function(input, output, session) {
     })
     output$fcnAnnot <- shiny::renderPrint({
         if(nchar(input$fcnName)){
+            ## get srcAnnotate from reactive expression
+            srcAnnotate <- srcAnnotate()
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path, srcAnnotate)
             if(input$treeType == 'hotpaths')
@@ -878,6 +887,7 @@ myShiny <- function(input, output, session) {
             if(!is.null(parseLine$fileName))
                 shinyFilename(parseLine$fileName)
             cat()
+            session$sendCustomMessage(type = 'scrollAnnot', message = list())
         }
     })
     
@@ -891,7 +901,7 @@ myShiny <- function(input, output, session) {
     })
     
     plotObj <- NULL
-    output$testing <- shiny::renderPrint({
+    output$labelObj <- shiny::renderPrint({
         if(input$plotType != 'plotCallgraph'){
             p <- plotObj
             idx <- which(input$plot_hover$x >= p$left & input$plot_hover$x <= p$right &
@@ -914,6 +924,8 @@ myShiny <- function(input, output, session) {
         maxNodes <- as.numeric(input$maxNodes)
         dropBelow <- as.numeric(input$dropBelow)
         if(nchar(input$fcnName)){
+            ## get srcAnnotate from reactive expression
+            srcAnnotate <- srcAnnotate()
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
             filtered <- filterProfileData(pd, focus = parseLine$fcnName)
