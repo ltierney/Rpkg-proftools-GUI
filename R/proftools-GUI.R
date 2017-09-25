@@ -21,6 +21,8 @@ offspring <- function(path, win) {
                                   self=offspringDF$self[sons],
                                   GC=offspringDF$GC[sons],
                                   GC.Self=offspringDF$GC.Self[sons], 
+                                  alloc=offspringDF$alloc[sons], 
+                                  allocself=offspringDF$allocself[sons], 
                                   stringsAsFactors=FALSE)
     }    
     else{ 
@@ -36,23 +38,30 @@ offspring <- function(path, win) {
                                   self=DF$self[foundingFathers],
                                   GC=DF$GC[foundingFathers],
                                   GC.Self=DF$GC.Self[foundingFathers], 
+                                  alloc = DF$alloc[foundingFathers], 
+                                  allocself = DF$allocself[foundingFathers], 
                                   stringsAsFactors=FALSE)
     }
     if(!self.gc[1]) {
         offspringDF$self = NULL
         offspringDF$GC.Self = NULL
+        offspringDF$allocself = NULL
     }
     if(!self.gc[2]) {
         offspringDF$GC = NULL
         offspringDF$GC.Self = NULL
     }
+    if(!self.gc[3]) {
+        offspringDF$alloc = NULL
+        offspringDF$allocself = NULL
+    }
     return(offspringDF)
 }
 
 setOffspringDF <- function(pd, value = c("pct", "time", "hits"),
-                           self = FALSE, srclines = TRUE, gc = TRUE,
+                           self = FALSE, srclines = TRUE, gc = TRUE, memory = FALSE,
                            maxdepth = 10){
-    pathData <- hotPaths(pd, value, self, srclines, gc, maxdepth, short = "-> ")
+    pathData <- hotPaths(pd, value, self, srclines, gc, memory, maxdepth = maxdepth, short = "-> ")
     x <- strsplit(pathData$path, "-> ")
     ## Plugs function names into paths and gets depth of each line
     y <- sapply(1:length(x), 
@@ -65,25 +74,31 @@ setOffspringDF <- function(pd, value = c("pct", "time", "hits"),
                       length(x[[i]]))
                 }
           )
-    pathData <- fixSumDF(pathData, self, gc, value)
+    pathData <- fixSumDF(pathData, self, gc, value, memory)
     ## Reason for global assignment is tcltk toolkit has problems passing the 
     ## dataframe to get children of foundingFathers
     data.frame(path=as.character(y[1,]), 
                                  name=as.character(y[2,]), depth=as.numeric(y[3,]), 
                                  total=pathData$total, self=pathData$self,
                                  GC=pathData$gc, GC.Self=pathData$gcself,
-                                 stringsAsFactors = F)
+                                 alloc=pathData$alloc, allocself = pathData$allocself,
+                                 stringsAsFactors = FALSE)
 }
 
-fixSumDF <- function(DF, self, gc, value){
+fixSumDF <- function(DF, self, gc, value, memory){
     names(DF) <- sub(paste(".", value[1], sep=""), "", names(DF), fixed=T)
     if(!gc){
         DF$gc <- rep("", nrow(DF))
         DF$gcself <- rep("", nrow(DF))
     }
+    if(!memory){
+        DF$alloc <- rep("", nrow(DF))
+        DF$allocself <- rep("", nrow(DF))
+    }
     if(!self){
         DF$self <- rep("", nrow(DF))
         DF$gcself <- rep("", nrow(DF))
+        DF$allocself <- rep("", nrow(DF))
     }
     DF
 }
@@ -94,29 +109,26 @@ offspringFunSum <- function(path, win) {
     self.gc <- attr(win, 'env')$self.gc
     if(length(path) > 0){
         fcnName <- path[length(path)]
-        fcn <- paste(" ", fcnName, " ->", sep="")
-        
-        calledFcns <- grep(fcn, row.names(callSum), fixed=TRUE)
+
+        calledFcns <- grep(fcnName, callSum$callers, fixed=TRUE)
         calledFcns <- callSum[calledFcns,]
-        splitFcns <- unlist(strsplit(row.names(calledFcns), "-> ", fixed=T))
-        calledFcnsNames <- splitFcns[seq(2,length(splitFcns), by=2)]
-        calledFcnsSrch <- paste(" ", calledFcnsNames, " ->", sep="")
-        haveSons <- sapply(calledFcnsSrch, 
-                           function(x) { any(grepl(x, row.names(callSum),
+        haveSons <- sapply(calledFcns$callees, 
+                           function(x) { any(grepl(x, callSum$callers,
                                              fixed=TRUE)) })
-        offspringDF <- data.frame(Function = calledFcnsNames, 
+        offspringDF <- data.frame(Function = calledFcns$callees, 
                                   haveSons = haveSons, 
                                   total=calledFcns$total, 
                                   self=calledFcns$self,
                                   GC=calledFcns$gc,
                                   GC.Self=calledFcns$gcself, 
+                                  alloc = calledFcns$alloc,
+                                  allocself = calledFcns$allocself,
                                   stringsAsFactors=FALSE)
     }    
     else{ 
-        foundingFathers <- row.names(fcnSummary)
-        foundingFathersSrch <- paste(" ", foundingFathers, " ->", sep="")
-        haveSons <- sapply(foundingFathersSrch, 
-                           function(x) { any(grepl(x, row.names(callSum),
+        foundingFathers <- fcnSummary$fun
+        haveSons <- sapply(foundingFathers, 
+                           function(x) { any(grepl(x, callSum$callers,
                                              fixed=TRUE)) })       
         offspringDF <- data.frame(Function = foundingFathers, 
                                   haveSons = haveSons, 
@@ -124,22 +136,30 @@ offspringFunSum <- function(path, win) {
                                   self=fcnSummary$self,
                                   GC=fcnSummary$gc,
                                   GC.Self=fcnSummary$gcself,
+                                  alloc=fcnSummary$alloc,
+                                  allocself=fcnSummary$allocself,
                                   stringsAsFactors=FALSE)
     }
     if(!self.gc[1]) {
         offspringDF$self = NULL
         offspringDF$GC.Self = NULL
+        offspringDF$allocself = NULL
     }
     if(!self.gc[2]) {
         offspringDF$GC = NULL
         offspringDF$GC.Self = NULL
+    }
+    if(!self.gc[3]) {
+        offspringDF$alloc = NULL
+        offspringDF$allocself = NULL
     }
     return(offspringDF)
 }
                      
 startGUI <- function(pd = NULL, method = c("gwidgets", "shiny"),
                      value = c("pct", "time", "hits"), self = FALSE, 
-                     gc = TRUE, srclines = TRUE){
+                     gc = TRUE, memory = FALSE, srclines = TRUE){
+    value <- match.arg(value)
     if(method == "gwidgets")
         startWidget(pd, value, self, gc, srclines)
     else if(method == "shiny")
@@ -148,33 +168,34 @@ startGUI <- function(pd = NULL, method = c("gwidgets", "shiny"),
                         
                         
 startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
-                        self = FALSE, gc = TRUE, srclines = TRUE,
+                        self = FALSE, gc = TRUE, memory = FALSE, srclines = TRUE,
                         maxdepth = 10, interval = NULL,
                         treeType="funSum", toolkit="RGtk2"){
     if (is.character(pd))
         pd <- readProfileData(pd)
+    value <- match.arg(value)
     options(guiToolkit = toolkit)
     win <- gwindow("Hot Path Tree", height=700, width=1000)
     ## Remove widgetMenu from previous session
     # if(exists("widgetMenu")) 
         # remove(widgetMenu, pos=.GlobalEnv)
-    processWidget(pd, value, self, srclines, gc, maxdepth, interval, treeType,
+    processWidget(pd, value, self, srclines, gc, memory, maxdepth, interval, treeType,
                   win)
 }
 
 processWidget <- function(pd, value = c("pct", "time", "hits"),
-                          self = FALSE, srclines = TRUE, gc = TRUE,
+                          self = FALSE, srclines = TRUE, gc = TRUE, memory = FALSE,
                           maxdepth = 10, interval, treeType="funSum", win){
     group <- ggroup(horizontal=FALSE,container=win)
     # we use if statement below to preserve the menu if it exists
     # if it does, we modify its svalue later
     if(is.null(attr(win, 'env')))
         attr(win, 'env') <- new.env()
-    attr(win, 'env')$self.gc <- c(self, gc)
+    attr(win, 'env')$self.gc <- c(self, gc, memory)
     if(!is.null(pd)){
         buttonCont <- ggroup(container=group)
         passedList <- list(pd=pd, value=value, self=self, srclines=srclines, 
-                           gc=gc, maxdepth=maxdepth, interval=interval,
+                           gc=gc, memory = memory, maxdepth=maxdepth, interval=interval,
                            treeType=treeType, win=win, group=group)
         glabel("Summary: ", container=buttonCont)
         SummaryView <- ifelse(treeType == "funSum", "Function", "Hot Paths")
@@ -186,16 +207,21 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
                            handler=unitsHandler, action=passedList)
         size(units) <- c(50, -1)
-        checkBoxes <- c("self", "gc"); checked=c(self,gc)
+        checkBoxes <- c("self", "gc", "memory"); checked=c(self,gc,memory)
         if(!pd$haveGC){
             checkBoxes <- checkBoxes[-2]
             checked <- checked[-2]
             gc <- FALSE
         }
+        if(!pd$haveMem){
+            checkBoxes <- checkBoxes[-3]
+            checked <- checked[-3]
+            memory <- FALSE
+        }
         gcheckboxgroup(checkBoxes, checked=checked, 
                                    container=buttonCont, horizontal=T,
                                    handler=checkHandler, action=passedList)
-        addSpinners(pd, value, self, srclines, gc, maxdepth, interval, treeType, win, group)
+        addSpinners(pd, value, self, srclines, gc, memory, maxdepth, interval, treeType, win, group)
         spinnerCont <- gpanedgroup(container=group)
         ggroup(container=spinnerCont)
         spinnerGroup <- ggroup(container=spinnerCont)
@@ -227,10 +253,10 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
             srcAnnotate <- attemptAnnot()
         }
         if(treeType=="funSum")
-            funSumTree(filteredPD, value, self, srclines, gc, srcAnnotate, 
+            funSumTree(filteredPD, value, self, srclines, gc, memory, srcAnnotate, 
                        maxnodes, dropBelow, trimCallgraph, win, group)
         else
-            hotPathsTree(filteredPD, value, self, srclines, gc, maxdepth, 
+            hotPathsTree(filteredPD, value, self, srclines, gc, memory, maxdepth, 
                          srcAnnotate, maxnodes, dropBelow, trimCallgraph, win, 
                          group)
         update(win)
@@ -241,7 +267,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
 }
 
 addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                      srclines = TRUE, gc = TRUE, maxdepth=10, interval, 
+                      srclines = TRUE, gc = TRUE, memory = FALSE, maxdepth=10, interval, 
                       treeType, win, group){
     if(is.null(interval)) interval <- c(1, pd$total)
     spinnerCont <- gframe(text = "Filter Selection", container=group, 
@@ -260,8 +286,9 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     }
     filterHandler <- function(h, ...){
         delete(win, group)
-        processWidget(pd, value, self, srclines, gc, maxdepth, 
+        processWidget(pd, value, self, srclines, gc, memory, maxdepth, 
                       interval, treeType, win)
+        
     }    
     s1 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[1], 
                   handler = s1Handler, cont=sCont)
@@ -342,7 +369,7 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         # attr(win, 'env')$m <- gmenu(mn, container=win)
 # }
 addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                    srclines = TRUE, gc = TRUE, maxdepth=10, treeType, 
+                    srclines = TRUE, gc = TRUE, memory = FALSE, maxdepth=10, treeType, 
                     win, group, gg){
     browseStack <- function(h, ...){
         stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
@@ -350,25 +377,25 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         pd <- readProfileData(stackBrowse)
         stopIfEmpty(pd, group)
         delete(win, group)
-        processWidget(pd, value, self, srclines, gc, maxdepth, treeType, win)
+        processWidget(pd, value, self, srclines, gc, memory, maxdepth, treeType, win)
     }
     
     browseR <- function(h, ...){
         sourceBrowse <- gfile("Source and profile an R file", quote=FALSE,
                               filter = list("Stack files"=
                                             list(patterns=c("*.R", "*.txt"))))
-        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
+        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
         source(sourceBrowse)
         Rprof(NULL)
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         delete(win, group)
         processWidget(filterProfileData(pd, focus = "source"), value, self,
-                      srclines, gc, maxdepth, treeType, win)
+                      srclines, gc, memory, maxdepth, treeType, win)
         unlink(tmp)
     }    
     profileRCode <- function(h, ...){
-        profileCode(pd, value, self, srclines, gc, maxdepth, NULL, treeType, win, group)
+        profileCode(pd, value, self, srclines, gc, memory, maxdepth, NULL, treeType, win, group)
     }    
     mn <- list(); mn$File <- list();
     mn$File[['Select a stack file']] <- gaction("Select a stack file", 
@@ -409,7 +436,7 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         attr(win, 'env')$m <- gmenu(mn, container=win)
 }
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                        srclines = TRUE, gc = TRUE, maxdepth=10, interval,
+                        srclines = TRUE, gc = TRUE, memory = FALSE, maxdepth=10, interval,
                         treeType, win, group){
     codeWindow <- gwindow("Profile R code", width=500, height=500)
     codeGroup <- ggroup(horizontal=FALSE,container=codeWindow)
@@ -421,7 +448,7 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     addHandlerChanged(btn, handler = function(h, ...) {
         tmp1 <- paste(tempfile(), ".R", sep="")
         write(svalue(profileText), file=tmp1)
-        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
+        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
         source(tmp1)
         Rprof(NULL)
         pd <- readProfileData(tmp)
@@ -430,7 +457,7 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         pd <- proftools::skipPD(pd, mydepth+4)
         delete(win, group)
         dispose(codeWindow)
-        processWidget(pd, value, self, srclines, gc, maxdepth, NULL, treeType,
+        processWidget(pd, value, self, srclines, gc, memory, maxdepth, NULL, treeType,
                       win)
     })
 }
@@ -443,15 +470,43 @@ stopIfEmpty <- function(pd, group){
     }
 }
 
+prepareCallSum <- function(pd, byTotal = TRUE, value, srclines, gc, memory){
+    callSum <- format(callSummary(pd, byTotal = TRUE, value, srclines, gc, memory))
+    callSumDF <- data.frame(row.names = 1:nrow(callSum))
+    callerCallee <- do.call(rbind, strsplit(callSum[,1], " -> "))
+    callSumDF$callers <- callerCallee[,1]
+    callSumDF$callees <- callerCallee[,2]
+    callSum <- callSum[,2:ncol(callSum)]
+    class(callSum) <- "numeric"
+    callSumDF <- cbind(callSumDF, callSum)
+    callSumDF
+}
+
+prepareFcnSummary <- function(pd, byTotal = TRUE, value, srclines, gc, memory){
+    fcnSumm <- format(funSummary(pd, byTotal = TRUE, value, srclines, gc, memory))
+    fcnSummary <- data.frame(row.names = 1:nrow(fcnSumm))
+    fcnSummary$fun <- fcnSumm[,1]
+    fcnSumm <- fcnSumm[,2:ncol(fcnSumm)]
+    class(fcnSumm) <- "numeric"
+    fcnSummary <- cbind(fcnSummary, fcnSumm)
+    fcnSummary
+}
+
 funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
-                       srclines = TRUE, gc = TRUE, srcAnnotate,maxnodes,
+                       srclines = TRUE, gc = TRUE, memory = FALSE, srcAnnotate,maxnodes,
                        dropBelow, trimCallgraph, win, group){
     treeType <- "funSum"
-    callSum <- callSummary(pd, byTotal = TRUE, value, srclines, gc)
-    row.names(callSum) <- paste(" ", row.names(callSum), sep="")
-    attr(win, 'env')$callSum <- fixSumDF(callSum, self, gc, value)
-    fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines, gc)
-    attr(win, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value)
+    
+    # callers <- paste0(callSum$caller, ifelse(is.na(callSum$caller.line), '', 
+                                            # paste0(' ', '(', callSum$caller.file, 
+                                                   # ':', callSum$caller.line, ')')))
+    # callees <- paste0(callSum$callee, ifelse(is.na(callSum$callee.line), '', 
+                                            # paste0(' ', '(', callSum$callee.file, 
+                                                   # ':', callSum$callee.line, ')')))
+    callSumDF <- prepareCallSum(pd, byTotal = TRUE, value, srclines, gc, memory)
+    attr(win, 'env')$callSum <- fixSumDF(callSumDF, self, gc, value, memory)
+    fcnSummary <- prepareFcnSummary(pd, byTotal = TRUE, value, srclines, gc, memory)
+    attr(win, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
     g <- gpanedgroup(container=gPane)
     treeCont <- gframe(text="Function Summary", container=g, expand=TRUE)
@@ -464,16 +519,16 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addMenu(pd, value, self, srclines, gc, maxdepth=10, treeType, win, group, gg)
+    addMenu(pd, value, self, srclines, gc, memory, maxdepth=10, treeType, win, group, gg)
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                 dropBelow, trimCallgraph, gg, win)
 }
 
 hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
-                         srclines = TRUE, gc = TRUE, maxdepth = 10, srcAnnotate,
+                         srclines = TRUE, gc = TRUE, memory = FALSE, maxdepth = 10, srcAnnotate,
                          maxnodes, dropBelow, trimCallgraph, win, group){
     treeType <- "hotPaths"
-    attr(win, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines, gc, maxdepth)
+    attr(win, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines, gc, memory, maxdepth)
     gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
     g <- gpanedgroup(container=gPane)
     treeCont <- gframe(text="Hot Paths", container=g, expand=TRUE, 
@@ -487,7 +542,7 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
-    addMenu(pd, value, self, srclines, gc, maxdepth=10, treeType, win, group, gg)
+    addMenu(pd, value, self, srclines, gc, memory, maxdepth=10, treeType, win, group, gg)
     addHandlers(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                 dropBelow, trimCallgraph, gg, win)
 }
@@ -599,7 +654,7 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc)
     attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines=TRUE, gc, maxdepth=10)
     callSum <- callSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
-    row.names(callSum) <- paste(" ", row.names(callSum), sep="")
+    callSum$fun <- paste(" ", callSum$fun, sep="")
     attr(winFunsum, 'env')$callSum <- fixSumDF(callSum, self, gc, value)
     fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
     attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value) 
@@ -797,25 +852,25 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
     ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=plotTreemap)    
     ml[['Plot Flamegraph']] <- gaction('Plot Flamegraph', handler=plotFlamegraph)
     ml[['Plot Timegraph']] <- gaction('Plot Timegraph', handler=plotTimegraph)    
-    add3rdmousePopupMenu(tree,menulist=ml)
+    addRightclickPopupMenu(tree,menulist=ml)
 }
 summaryHandler <- function(h, ...){
     summaryView <- ifelse(svalue(h$obj) == "Function", "funSum", "hotPaths")
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines, 
-                  h$action$gc, h$action$maxdepth, h$action$interval, summaryView, h$action$win)
+                  h$action$gc,h$action$memory, h$action$maxdepth, h$action$interval, summaryView, h$action$win)
 }
 unitsHandler <- function(h, ...){
     value <- svalue(h$obj)
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, value, h$action$self, h$action$srclines, 
-                  h$action$gc, h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
+                  h$action$gc, h$action$memory, h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 checkHandler <- function(h, ...){
-    self.gc <- c("self", "gc") %in% svalue(h$obj)
+    self.gc <- c("self", "gc", "memory") %in% svalue(h$obj)
     delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
-                  self.gc[2], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
+                  self.gc[2], self.gc[3], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 myShiny <- function(input, output, session) {
     pd <- shinyPD()
@@ -833,10 +888,9 @@ myShiny <- function(input, output, session) {
         attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
         attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(input$self, input$gc)
         attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, input$value, input$self, srclines=TRUE, input$gc, maxdepth=10)
-        callSum <- callSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
-        row.names(callSum) <- paste(" ", row.names(callSum), sep="")
-        attr(winFunsum, 'env')$callSum <- fixSumDF(callSum, input$self, input$gc, input$value)
-        fcnSummary <- funSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
+        callSumDF <- prepareCallSum(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
+        attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, input$self, input$gc, input$value)
+        fcnSummary <- prepareFcnSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
         attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, input$self, input$gc, input$value) 
         list(winHotpaths = winHotpaths, winFunsum = winFunsum)
     })
