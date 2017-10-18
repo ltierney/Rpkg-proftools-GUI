@@ -472,24 +472,30 @@ stopIfEmpty <- function(pd, group){
 
 prepareCallSum <- function(pd, byTotal = TRUE, value, srclines, gc, memory){
     callSum <- format(callSummary(pd, byTotal = TRUE, value, srclines, gc, memory))
-    callSumDF <- data.frame(row.names = 1:nrow(callSum))
     callerCallee <- do.call(rbind, strsplit(callSum[,1], " -> "))
-    callSumDF$callers <- callerCallee[,1]
-    callSumDF$callees <- callerCallee[,2]
-    callSum <- callSum[,2:ncol(callSum)]
-    class(callSum) <- "numeric"
-    callSumDF <- cbind(callSumDF, callSum)
-    callSumDF
+    callSum <- cbind(callerCallee, callSum[,-1])
+    names(callSum)[1:2] <- c("callers", "callees")
+    callSum
+    # callSumDF <- data.frame(row.names = 1:nrow(callSum))
+    # 
+    # callSumDF$callers <- callerCallee[,1]
+    # callSumDF$callees <- callerCallee[,2]
+    # callSum <- callSum[,2:ncol(callSum)]
+    # class(callSum) <- "numeric"
+    # callSumDF <- cbind(callSumDF, callSum)
+    # callSumDF
 }
 
 prepareFcnSummary <- function(pd, byTotal = TRUE, value, srclines, gc, memory){
     fcnSumm <- format(funSummary(pd, byTotal = TRUE, value, srclines, gc, memory))
-    fcnSummary <- data.frame(row.names = 1:nrow(fcnSumm))
-    fcnSummary$fun <- fcnSumm[,1]
-    fcnSumm <- fcnSumm[,2:ncol(fcnSumm)]
-    class(fcnSumm) <- "numeric"
-    fcnSummary <- cbind(fcnSummary, fcnSumm)
-    fcnSummary
+    names(fcnSumm)[1] <- "fun"
+    fcnSumm
+    # fcnSummary <- data.frame(row.names = 1:nrow(fcnSumm))
+    # fcnSummary$fun <- fcnSumm[,1]
+    # fcnSumm <- fcnSumm[,2:ncol(fcnSumm)]
+    # class(fcnSumm) <- "numeric"
+    # fcnSummary <- cbind(fcnSummary, fcnSumm)
+    # fcnSummary
 }
 
 funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
@@ -596,7 +602,34 @@ parseSon <- function(i, offspringDF, path, id, treetype, win){
         x <- paste(x,"}")
     x
 }
-
+parseSon <- function(i, offspringDF, path, id, treetype, win){
+    if(length(path)) parent <- paste0(',"_parentId":', id)
+    else parent <- NULL
+    #parentID <- substr(id[1], 1, nchar(id[1])-1)
+    newID <- paste0(length(path)+1,id,i)
+    fieldNames <- names(offspringDF)
+    fields <- paste(sapply(fieldNames, 
+                           function(x) paste0('"',x,'":"', offspringDF[[x]][i], '"')),
+                    collapse = ",")
+    fields <- paste('{"id":', newID, ',', fields, parent)
+    if(length(path) && (treetype == "funSum")){
+        # lastTwo <- c(getFname(path[length(path)]), 
+                     # getFname(as.character(offspringDF$Function[i])))
+        # makeSons <- !(any(as.logical(lapply(cycles, vecIn, lastTwo)), na.rm=TRUE) 
+                      # || (lastTwo[1] == lastTwo[2]) 
+                      # || (length(path) >= 2))
+        makeSons <- !(length(path) >= 2)
+    }
+    else
+        makeSons <- TRUE
+    if(offspringDF$haveSons[i] && makeSons)
+        fields <- paste(fields, "},",
+                   parseOffspring(c(path, as.character(offspringDF$Function[i]))
+                                  , treetype, win, newID))
+    else
+        fields <- paste(fields,"}")
+    fields
+}
 generateJSON <- function(pd, path, winHotpaths, winFunsum){
     # cycles <- profileDataCycles(pd, TRUE)
     # cycles <<- lapply(cycles, function(x) c(x, x[1]))
@@ -626,8 +659,9 @@ shinyFilename <- local({
 
 
 runShiny <- function(pd, value = c("pct", "time", "hits"),
-                     self = FALSE, gc = TRUE, srclines = TRUE,
+                     self = FALSE, gc = TRUE, memory = FALSE, srclines = TRUE,
                      maxdepth = 10){
+    value <- match.arg(value)
     pd$files <- normalizePath(pd$files)
     shinyPD(pd)
 
@@ -642,22 +676,24 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     path <- system.file("appdir", package="proftoolsGUI")
     #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     index <- readLines(file.path(path, "www", "index.html"))
-    index[258] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    index[288] <- paste0('  <option value="', value, '" selected>', value, '</option>')
     checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[263:265] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+    index[293:295] <- paste0(c('<input id="total" type="hidden" name="count" value="',
                                '<input id="self" type="checkbox" name="self" value="1"',
                                '<input id="gc" type="checkbox" name="gc" value="1" '),
                              c(pd$total, checked), c('">', '> Self', '> GC'))
     write(index,file.path(path, "www", "index.html"))
     winHotpaths <- winFunsum <- c(1)
     attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
-    attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc)
-    attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines=TRUE, gc, maxdepth=10)
-    callSum <- callSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
-    callSum$fun <- paste(" ", callSum$fun, sep="")
-    attr(winFunsum, 'env')$callSum <- fixSumDF(callSum, self, gc, value)
-    fcnSummary <- funSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
-    attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value) 
+    attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc, memory)
+    attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines=TRUE, 
+                                                           gc, memory, maxdepth=10)
+    # callSum <- callSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
+    # callSum$fun <- paste(" ", callSum$fun, sep="")
+    callSumDF <- prepareCallSum(pd, byTotal = TRUE, value, srclines, gc, memory)
+    attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, self, gc, value, memory)
+    fcnSummary <- prepareFcnSummary(pd, byTotal = TRUE, value, srclines, gc, memory)
+    attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory) 
     generateJSON(pd, path, winHotpaths, winFunsum)
     shiny::runApp(path)
 }
@@ -886,12 +922,12 @@ myShiny <- function(input, output, session) {
         filteredPD <- filtered()
         winHotpaths <- winFunsum <- c(1)
         attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
-        attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(input$self, input$gc)
-        attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, input$value, input$self, srclines=TRUE, input$gc, maxdepth=10)
-        callSumDF <- prepareCallSum(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
-        attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, input$self, input$gc, input$value)
-        fcnSummary <- prepareFcnSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc)
-        attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, input$self, input$gc, input$value) 
+        attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(input$self, input$gc, input$memory)
+        attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, input$value, input$self, srclines=TRUE, input$gc, input$memory, maxdepth=10)
+        callSumDF <- prepareCallSum(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc, input$memory)
+        attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, input$self, input$gc, input$value, input$memory)
+        fcnSummary <- prepareFcnSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc, input$memory)
+        attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, input$self, input$gc, input$value, input$memory) 
         list(winHotpaths = winHotpaths, winFunsum = winFunsum)
     })
     
@@ -909,9 +945,13 @@ myShiny <- function(input, output, session) {
         wins <- dataInput()
         generateJSON(filteredPD, path, wins$winHotpaths, wins$winFunsum)
         session$sendCustomMessage(type = 'updateTable', 
-                                  message = list(value = input$value, 
-                                                 self = input$self,
-                                                 gc = input$gc))
+                                  message = list(value = input$value))
+    })
+    shiny::observe({
+        session$sendCustomMessage(type = 'tickBox', 
+                                  message = list(self = input$self,
+                                                 gc = input$gc,
+                                                 memory = input$memory))
     })
     session$onSessionEnded(function() {
         shiny::stopApp()

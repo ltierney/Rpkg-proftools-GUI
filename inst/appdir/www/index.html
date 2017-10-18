@@ -19,12 +19,12 @@
   <script src="shared/shiny.js" type="text/javascript"></script>
   <link rel="stylesheet" type="text/css" href="shared/shiny.css"/> <link rel="stylesheet" type="text/css" href="styles/jquery.qtip.min.css"/> 
   <script>
- 
+ //$.getJSON( "/test.JSON", function( data ) {alert(data[1].id)});
 window.onbeforeunload = function(e) {
     $("#closing").val('closing'); setTimeout(function(){}, 2000);
 };
 $(document).ready(function() {
-
+//$.getJSON( "test.JSON", function( data ) {alert(JSON.stringify(data)); alert(data.rows[1].id)});
    $('#plot').qtip({ // Grab some elements to apply the tooltip to
         position: {
             target: 'mouse', // Position it where the click was...
@@ -97,10 +97,17 @@ function makeFunsum(){
     $("#fcnName").val(currentName);
     Shiny.bindAll();
     $('#funsum').treegrid({
+        /*            url: 'funsum.JSON',
+                    method: 'get',
+                    rownumbers: true,
+                    idField: 'id',
+                    treeField: 'name', loadFilter: myLoadFilter,
+                    columns:[[ {field:'name',title:'Name'},{field:'total',title:'Total'},
+                    {field:'self',title:'Self'}, {field:'GC',title:'GC'},{field:'GCself',title:'GCself'}]],*/
                     onClickCell: function(field,row){
                         tempRow = row.id; 
                         currentId = row.id;
-                        currentName = row.name;
+                        currentName = row.Function;
                         selected = $('#funsum').treegrid('getSelected');
                         if(selected != null && selected.id == tempRow){
                             $('#funsum').treegrid('unselectAll');
@@ -109,7 +116,7 @@ function makeFunsum(){
                             Shiny.bindAll();
                             throw new Error('Just to prevent re-selection of row'); }
                         else{
-                            path = row.name; 
+                            path = row.Function; 
                             for(i=0; i<row.id.length-1; i++){
                                 parentRow = $('#funsum').treegrid('getParent', tempRow);
                                 path += ',' + parentRow.name;
@@ -143,7 +150,7 @@ function makeHotpaths(){
                     onClickCell: function(field,row){
                         tempRow = row.id; 
                         currentIdHot = row.id;
-                        currentNameHot = row.name;
+                        currentNameHot = row.Function;
                         selected = $('#hotpaths').treegrid('getSelected');
                         if(selected != null && selected.id == tempRow){
                             $('#hotpaths').treegrid('unselectAll');
@@ -152,7 +159,7 @@ function makeHotpaths(){
                             Shiny.bindAll();
                             throw new Error('Just to prevent re-selection of row'); }
                         else{
-                            path = row.name; 
+                            path = row.Function; 
                             for(i=0; i<row.id.length-1; i++){
                                 parentRow = $('#hotpaths').treegrid('getParent', tempRow);
                                 path += ',' + parentRow.name;
@@ -181,9 +188,13 @@ Shiny.addCustomMessageHandler("updateTable",
     function(message) {
         makeFunsum();
         makeHotpaths();
+        if(message.self)
+            $('#funsum').treegrid('showColumn', 'self');
+        else 
+            $('#funsum').treegrid('hideColumn', 'self');
         $('#tab-container').bind('easytabs:before', function(evt, tab, panel, data) {
             if(panel.selector == '#tabs1-hotpaths'){
-                makeHotpaths();
+                makeHotpaths(); 
             }
             else if(panel.selector == '#tabs1-funsum'){
                 makeFunsum();
@@ -191,7 +202,30 @@ Shiny.addCustomMessageHandler("updateTable",
         });
     }
 );	
-
+Shiny.addCustomMessageHandler("tickBox",
+    function(message) {
+        if(message.self)
+            $('#funsum').treegrid('showColumn', 'self');
+        else
+            $('#funsum').treegrid('hideColumn', 'self');
+        if(message.gc)
+            $('#funsum').treegrid('showColumn', 'GC');
+        else
+            $('#funsum').treegrid('hideColumn', 'GC');
+        if(message.self && message.gc)
+            $('#funsum').treegrid('showColumn', 'GC.Self');
+        else
+            $('#funsum').treegrid('hideColumn', 'GC.Self');
+        if(message.memory)
+            $('#funsum').treegrid('showColumn', 'alloc');
+        else
+            $('#funsum').treegrid('hideColumn', 'alloc');
+        if(message.memory && message.self)
+            $('#funsum').treegrid('showColumn', 'allocself');
+        else
+            $('#funsum').treegrid('hideColumn', 'allocself');
+    }
+);	
 Shiny.addCustomMessageHandler("scrollAnnot",
     function(message) {
         setTimeout(function(){
@@ -200,10 +234,7 @@ Shiny.addCustomMessageHandler("scrollAnnot",
         }, 500);
     }
 );	
-
-
 function makeTrees(){
-
     /*
     $('#hotpaths').treegrid({
         onClickCell: function(field,row){
@@ -220,12 +251,11 @@ function makeTrees(){
         }
     }); 
     */
-
     return;
 }
-
 });
-  </script>
+
+</script>
   <style>
   #fileName{font-weight: bold; position: absolute; top:630px; left:20px; width: 1297px}
   #trimCallgraph{position: absolute; top:185px; right:20px;}
@@ -263,11 +293,13 @@ function makeTrees(){
 <input id="total" type="hidden" name="count" value="894">
 <input id="self" type="checkbox" name="self" value="1" checked> Self
 <input id="gc" type="checkbox" name="gc" value="1" > GC
+<input id="memory" type="checkbox" name="memory" value="1" > Memory
 <div style="margin:20px 0 80px 0" id="filterSlider"> </div>
 <div id="trimCallgraph">
 Max Nodes: <input type="text" id="maxNodes" name="maxNodes" value="30"/>
 Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 </div>
+<input type="text" id="tabSelected" name="tabSelected" value="funsum" class="hidden"/>
     <input type="text" id="fcnName" name="fcnName" value="" class="hidden"/>
      <input type="text" id="treeType" name="treeType" value="" class="hidden"/>
 	<input type="text" id="plotType" name="plotType" value="" class="hidden"/>
@@ -278,20 +310,23 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
     <div id="funSum" style="float:left;width:800px;height:400px:">
 	<table id="funsum" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
     data-options="
-                url: 'funsum.JSON',
+				url: 'funsum.JSON',
 				method: 'get',
 				rownumbers: true,
 				idField: 'id',
-				treeField: 'name'
+				treeField: 'Function',
+				loadFilter: myLoadFilter
 			">
 		<thead>
 <tr>
-<th field="name" width="220">Name</th>
+<th field="Function" width="220">Name</th>
 <th field="total" width="150">Total</th>
 <span id="gcself">
 <th field="self" width="150">Self</th>
 <th field="GC" width="150">GC</th>
-<th field="GCself" width="150">GC.Self</th>
+<th field="GC.Self" width="150">GC.Self</th>
+<th field="alloc" width="150">Alloc</th>
+<th field="allocself" width="150">Alloc.Self</th>
 </span>
 </tr>
 		</thead>
@@ -306,17 +341,17 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 				method: 'get',
 				rownumbers: true,
 				idField: 'id',
-				treeField: 'name',
+				treeField: 'Function',
 				loadFilter: myLoadFilter
 			">
 		<thead>
 <tr> 
-<th field="name" width="220">Name</th>
+<th field="Function" width="220">Name</th>
 <th field="total" width="150">Total</th>
 
 <th field="self" width="150">Self</th>
 <th field="GC" width="150">GC</th>
-<th field="GCself" width="150">GC.Self</th>
+<th field="GC.Self" width="150">GC.Self</th>
 
 </tr>
 		</thead>
