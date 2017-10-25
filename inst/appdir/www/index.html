@@ -79,17 +79,7 @@ currentNameHot = '';
 $(document).on('click', 'span', function () {
         
     });
-	/*
-setTimeout(
-    function() {
-		if (!$('#self').is(':checked')) {
-			Shiny.unbindAll();
-			$("#gcself").html('');
-			Shiny.bindAll();
-			alert('hi')
-		}
-    }, 1000);
-*/
+
 $('#tab-container').easytabs();
 function makeFunsum(){
     Shiny.unbindAll();
@@ -194,9 +184,11 @@ Shiny.addCustomMessageHandler("updateTable",
             $('#funsum').treegrid('hideColumn', 'self');
         $('#tab-container').bind('easytabs:before', function(evt, tab, panel, data) {
             if(panel.selector == '#tabs1-hotpaths'){
+                $('#tabSelected').val('hotpaths');
                 makeHotpaths(); 
             }
             else if(panel.selector == '#tabs1-funsum'){
+                $('#tabSelected').val('funsum');
                 makeFunsum();
             }
         });
@@ -204,26 +196,27 @@ Shiny.addCustomMessageHandler("updateTable",
 );	
 Shiny.addCustomMessageHandler("tickBox",
     function(message) {
+        tabSelected = '#' + $('#tabSelected').val();
         if(message.self)
-            $('#funsum').treegrid('showColumn', 'self');
+            $(tabSelected).treegrid('showColumn', 'self');
         else
-            $('#funsum').treegrid('hideColumn', 'self');
+            $(tabSelected).treegrid('hideColumn', 'self');
         if(message.gc)
-            $('#funsum').treegrid('showColumn', 'GC');
+            $(tabSelected).treegrid('showColumn', 'GC');
         else
-            $('#funsum').treegrid('hideColumn', 'GC');
+            $(tabSelected).treegrid('hideColumn', 'GC');
         if(message.self && message.gc)
-            $('#funsum').treegrid('showColumn', 'GC.Self');
+            $(tabSelected).treegrid('showColumn', 'GC.Self');
         else
-            $('#funsum').treegrid('hideColumn', 'GC.Self');
+            $(tabSelected).treegrid('hideColumn', 'GC.Self');
         if(message.memory)
-            $('#funsum').treegrid('showColumn', 'alloc');
+            $(tabSelected).treegrid('showColumn', 'alloc');
         else
-            $('#funsum').treegrid('hideColumn', 'alloc');
+            $(tabSelected).treegrid('hideColumn', 'alloc');
         if(message.memory && message.self)
-            $('#funsum').treegrid('showColumn', 'allocself');
+            $(tabSelected).treegrid('showColumn', 'allocself');
         else
-            $('#funsum').treegrid('hideColumn', 'allocself');
+            $(tabSelected).treegrid('hideColumn', 'allocself');
     }
 );	
 Shiny.addCustomMessageHandler("scrollAnnot",
@@ -254,6 +247,13 @@ function makeTrees(){
     return;
 }
 });
+
+
+
+
+
+
+
 
 </script>
   <style>
@@ -352,6 +352,8 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 <th field="self" width="150">Self</th>
 <th field="GC" width="150">GC</th>
 <th field="GC.Self" width="150">GC.Self</th>
+<th field="alloc" width="150">Alloc</th>
+<th field="allocself" width="150">Alloc.Self</th>
 
 </tr>
 		</thead>
