@@ -575,6 +575,7 @@ vecIn <- function(a,b){
                                 y[[x]][x:(length(a) - length(b) +x)]
                              })) == length(b))
 } 
+## this is old parseSon, uses hardcoded column names
 parseSon <- function(i, offspringDF, path, id, treetype, win){
     if(length(path)) parent <- paste0(',"_parentId":', id)
     else parent <- NULL
@@ -634,9 +635,9 @@ generateJSON <- function(pd, path, winHotpaths, winFunsum){
     # cycles <- profileDataCycles(pd, TRUE)
     # cycles <<- lapply(cycles, function(x) c(x, x[1]))
     write(c("{\"rows\":[",parseOffspring(c(), 'hotpaths', winHotpaths),"]}"), 
-          paste(path, "/www/hotpaths.JSON", sep=""))         
+          file.path(path, "tempDir", "hotpaths.JSON"))         
     write(c("{\"rows\":[",parseOffspring(c(), 'funSum', winFunsum),"]}"), 
-          paste(path, "/www/funsum.JSON", sep="")) 
+          file.path(path, "tempDir", "funsum.JSON")) 
 }
 
 shinyPD <- local({
@@ -647,7 +648,14 @@ shinyPD <- local({
         pd
     }
 })
-
+arg <- local({
+    arg <- NULL
+    function(new) {
+        if (! missing(new))
+            arg <<- new
+        arg
+    }
+})
 shinyFilename <- local({
     shinyFilename <- NULL
     function(new) {
@@ -662,9 +670,12 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
                      self = FALSE, gc = TRUE, memory = FALSE, srclines = TRUE,
                      maxdepth = 10){
     value <- match.arg(value)
+    if(!pd$haveMem) memory <- FALSE 
+    if(!pd$haveGC) gc <- FALSE 
+    
     pd$files <- normalizePath(pd$files)
     shinyPD(pd)
-
+    arg(list(self, gc, memory, value))
     srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
     # cols <- c("<th field=\"self\" width=\"150\">Self</th>",
               # "<th field=\"GC\" width=\"150\">GC</th>",
@@ -675,14 +686,14 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
         # cols[c(1,3)] <- ""
     path <- system.file("appdir", package="proftoolsGUI")
     #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
-    index <- readLines(file.path(path, "www", "index.html"))
-    index[288] <- paste0('  <option value="', value, '" selected>', value, '</option>')
-    checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
-    index[293:295] <- paste0(c('<input id="total" type="hidden" name="count" value="',
-                               '<input id="self" type="checkbox" name="self" value="1"',
-                               '<input id="gc" type="checkbox" name="gc" value="1" '),
-                             c(pd$total, checked), c('">', '> Self', '> GC'))
-    write(index,file.path(path, "www", "index.html"))
+    # index <- readLines(file.path(path, "www", "index.html"))
+    # index[288] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    # checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
+    # index[293:295] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+                               # '<input id="self" type="checkbox" name="self" value="1"',
+                               # '<input id="gc" type="checkbox" name="gc" value="1" '),
+                             # c(pd$total, checked), c('">', '> Self', '> GC'))
+    # write(index,file.path(path, "www", "index.html"))
     winHotpaths <- winFunsum <- c(1)
     attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
     attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc, memory)
@@ -694,7 +705,10 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, self, gc, value, memory)
     fcnSummary <- prepareFcnSummary(pd, byTotal = TRUE, value, srclines, gc, memory)
     attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory) 
-    generateJSON(pd, path, winHotpaths, winFunsum)
+    tempDir <- tempdir()
+    dir.create(file.path(tempDir, "tempDir"), showWarnings = FALSE)
+    addResourcePath("tempDir", file.path(tempDir, "tempDir"))
+    generateJSON(pd, tempDir, winHotpaths, winFunsum)
     shiny::runApp(path)
 }
 
@@ -910,24 +924,45 @@ checkHandler <- function(h, ...){
 }
 myShiny <- function(input, output, session) {
     pd <- shinyPD()
-    
+    arg <- arg()
     filtered <- shiny::reactive({
         if(input$sliderLower != '')
             filterProfileData(pd, interval = c(input$sliderLower, input$sliderUpper))
         else
             pd
     })
-    
+    shiny::observe({
+        session$sendCustomMessage(type = 'have', 
+                                  message = list(haveMem = as.numeric(pd$haveMem),
+                                                 haveGC = as.numeric(pd$haveGC),
+                                                 self = as.numeric(arg[[1]]),
+                                                 gc = as.numeric(arg[[2]]),
+                                                 memory = as.numeric(arg[[3]]),
+                                                 value = arg[[4]],
+                                                 total = pd$total))
+    })
     dataInput <- shiny::reactive({
         filteredPD <- filtered()
         winHotpaths <- winFunsum <- c(1)
+        if(is.null(input$ready)){
+            self <- arg[[1]]
+            gc <- arg[[2]]
+            memory <- arg[[3]]
+            value <- arg[[4]]
+        }
+        else{
+            self <- input$self
+            gc <- input$gc
+            memory <- input$memory
+            value <- input$value
+        }
         attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
-        attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(input$self, input$gc, input$memory)
-        attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, input$value, input$self, srclines=TRUE, input$gc, input$memory, maxdepth=10)
-        callSumDF <- prepareCallSum(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc, input$memory)
-        attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, input$self, input$gc, input$value, input$memory)
-        fcnSummary <- prepareFcnSummary(filteredPD, byTotal = TRUE, input$value, srclines=TRUE, input$gc, input$memory)
-        attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, input$self, input$gc, input$value, input$memory) 
+        attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc, memory)
+        attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, value, self, srclines=TRUE, gc, memory, maxdepth=10)
+        callSumDF <- prepareCallSum(filteredPD, byTotal = TRUE, value, srclines=TRUE, gc, memory)
+        attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, self, gc, value, memory)
+        fcnSummary <- prepareFcnSummary(filteredPD, byTotal = TRUE, value, srclines=TRUE, gc, memory)
+        attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory) 
         list(winHotpaths = winHotpaths, winFunsum = winFunsum)
     })
     
@@ -940,19 +975,22 @@ myShiny <- function(input, output, session) {
     
     shiny::observe({
         filteredPD <- filtered()
-        path <- system.file("appdir", package="proftoolsGUI")
+        # path <- system.file("appdir", package="proftoolsGUI")
         #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
         wins <- dataInput()
-        generateJSON(filteredPD, path, wins$winHotpaths, wins$winFunsum)
+        generateJSON(filteredPD, file.path(tempdir()), wins$winHotpaths, 
+                     wins$winFunsum)
         session$sendCustomMessage(type = 'updateTable', 
                                   message = list(value = input$value))
     })
+
     shiny::observe({
         session$sendCustomMessage(type = 'tickBox', 
                                   message = list(self = input$self,
                                                  gc = input$gc,
                                                  memory = input$memory))
     })
+    
     session$onSessionEnded(function() {
         shiny::stopApp()
     })

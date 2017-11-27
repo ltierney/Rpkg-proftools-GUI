@@ -41,32 +41,12 @@ $(document).ready(function() {
 function filter10( value, type ){
 	return value % 10 ? 1 : 0;
 }
+
+//total = $("#total").val();
+
 var slider = document.getElementById('filterSlider');
-total = $("#total").val();
 
-noUiSlider.create(slider, {
-	start: [1, parseInt(total)], // Handle start position
-	step: 1, // Slider moves in increments of '10'
-	margin: 1, // Handles must be more than '20' apart
-	connect: true, // Display a colored bar between the handles
-	range: { // Slider can select '0' to '100'
-		'min': 1,
-		'max': parseInt(total)
-	},
-	pips: { // Show a scale with the slider
-		mode: 'positions',
-        density: 5,
-        values: [0,10,20,30,40,50,60,70,80,90,100],
-	}
-});
 
-slider.noUiSlider.on('set', function(){
-    values = slider.noUiSlider.get();
-    Shiny.unbindAll();
-    $("#sliderLower").val(parseInt(values[0]));
-    $("#sliderUpper").val(parseInt(values[1]));
-    Shiny.bindAll();
-});
 
 count = 0;
 countCollapse = 0;
@@ -87,13 +67,14 @@ function makeFunsum(){
     $("#fcnName").val(currentName);
     Shiny.bindAll();
     $('#funsum').treegrid({
-        /*            url: 'funsum.JSON',
+                   /* url: '/tempDir/funsum.JSON',
                     method: 'get',
                     rownumbers: true,
                     idField: 'id',
-                    treeField: 'name', loadFilter: myLoadFilter,
-                    columns:[[ {field:'name',title:'Name'},{field:'total',title:'Total'},
-                    {field:'self',title:'Self'}, {field:'GC',title:'GC'},{field:'GCself',title:'GCself'}]],*/
+                    treeField: 'Function', //loadFilter: myLoadFilter,
+                    columns:[[ {field:'Function',title:'Name'},{field:'total',title:'Total'},
+                    {field:'self',title:'Self'}, {field:'alloc',title:'Alloc'},{field:'allocself',title:'Alloc Self'},
+                    {field:'GC',title:'GC'},{field:'GCself',title:'GCself'}]],*/
                     onClickCell: function(field,row){
                         tempRow = row.id; 
                         currentId = row.id;
@@ -116,9 +97,10 @@ function makeFunsum(){
                             $("#fcnName").val(path);
                             Shiny.bindAll();
                         }
-                    }
+                    }//,
+                    //onLoadSuccess: function(row, data) {$('#funsum').treegrid('collapseAll');}
                 });
-
+    hideShowCols();
     setTimeout(
         function() {
         if(countCollapse == 0)
@@ -161,6 +143,7 @@ function makeHotpaths(){
                         }
                     }
                 });
+    hideShowCols();
     setTimeout(
         function() {
         if(countCollapseHot == 0)
@@ -178,10 +161,6 @@ Shiny.addCustomMessageHandler("updateTable",
     function(message) {
         makeFunsum();
         makeHotpaths();
-        if(message.self)
-            $('#funsum').treegrid('showColumn', 'self');
-        else 
-            $('#funsum').treegrid('hideColumn', 'self');
         $('#tab-container').bind('easytabs:before', function(evt, tab, panel, data) {
             if(panel.selector == '#tabs1-hotpaths'){
                 $('#tabSelected').val('hotpaths');
@@ -217,6 +196,76 @@ Shiny.addCustomMessageHandler("tickBox",
             $(tabSelected).treegrid('showColumn', 'allocself');
         else
             $(tabSelected).treegrid('hideColumn', 'allocself');
+    }
+);	
+function hideShowCols(){
+    tabSelected = '#' + $('#tabSelected').val();
+    self = $('#self').is(':checked');
+    gc = $('#gc').is(':checked');
+    memory = $('#memory').is(':checked');
+    if(self)
+        $(tabSelected).treegrid('showColumn', 'self');
+    else
+        $(tabSelected).treegrid('hideColumn', 'self');
+    if(gc)
+        $(tabSelected).treegrid('showColumn', 'GC');
+    else
+        $(tabSelected).treegrid('hideColumn', 'GC');
+    if(self && gc)
+        $(tabSelected).treegrid('showColumn', 'GC.Self');
+    else
+        $(tabSelected).treegrid('hideColumn', 'GC.Self');
+    if(memory)
+        $(tabSelected).treegrid('showColumn', 'alloc');
+    else
+        $(tabSelected).treegrid('hideColumn', 'alloc');
+    if(memory && self)
+        $(tabSelected).treegrid('showColumn', 'allocself');
+    else
+        $(tabSelected).treegrid('hideColumn', 'allocself');
+}
+
+Shiny.addCustomMessageHandler("have",
+    function(message) {
+        if(message.self)
+            $('#self').prop('checked', true);       
+        if(message.gc)
+            $('#gc').prop('checked', true);        
+        if(message.memory)
+            $('#memory').prop('checked', true);
+        if(!message.haveGC)
+            $("#haveGC").hide();
+        if(!message.haveMem)
+            $("#haveMemory").hide();
+  //      alert(message.haveMem);
+ //       alert(message.gc);
+        $("#value").val(message.value);
+        $("#total").val(message.total);
+        total = message.total;
+        var slider = document.getElementById('filterSlider');
+        noUiSlider.create(slider, {
+            start: [1, parseInt(total)], // Handle start position
+            step: 1, // Slider moves in increments of '10'
+            margin: 1, // Handles must be more than '20' apart
+            connect: true, // Display a colored bar between the handles
+            range: { // Slider can select '0' to '100'
+                'min': 1,
+                'max': parseInt(total)
+            },
+            pips: { // Show a scale with the slider
+                mode: 'positions',
+                density: 5,
+                values: [0,10,20,30,40,50,60,70,80,90,100],
+            }
+        });
+        slider.noUiSlider.on('set', function(){
+            values = slider.noUiSlider.get();
+            Shiny.unbindAll();
+            $("#sliderLower").val(parseInt(values[0]));
+            $("#sliderUpper").val(parseInt(values[1]));
+            Shiny.bindAll();
+        });
+        Shiny.onInputChange('ready', 1);
     }
 );	
 Shiny.addCustomMessageHandler("scrollAnnot",
@@ -285,15 +334,14 @@ function makeTrees(){
   <option value="plotTimegraph">Plot Time Graph</option>
 </select> 
 	Units: <select id="value" name="value">
-  <option value="time" selected>time</option>
   <option value="pct">pct</option> 
   <option value="time">time</option>
   <option value="hits">hits</option>
 </select>   
-<input id="total" type="hidden" name="count" value="894">
-<input id="self" type="checkbox" name="self" value="1" checked> Self
-<input id="gc" type="checkbox" name="gc" value="1" > GC
-<input id="memory" type="checkbox" name="memory" value="1" > Memory
+<input id="total" type="hidden" name="count" value="800">
+<input id="self" type="checkbox" name="self" value="1" > Self
+<span id="haveGC"><input id="gc" type="checkbox" name="gc" value="1" > GC</span>
+<span id="haveMemory"><input id="memory" type="checkbox" name="memory" value="1" > Memory</span>
 <div style="margin:20px 0 80px 0" id="filterSlider"> </div>
 <div id="trimCallgraph">
 Max Nodes: <input type="text" id="maxNodes" name="maxNodes" value="30"/>
@@ -308,52 +356,47 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
     <input type="text" id="closing" name="closing" value="" class="hidden"/>
     <div id="tabs1-funsum">
     <div id="funSum" style="float:left;width:800px;height:400px:">
-	<table id="funsum" title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
-    data-options="
-				url: 'funsum.JSON',
+	<table id="funsum" url="/tempDir/funsum.JSON"  title="Function Summary" class="easyui-treegrid" style="float:left;width:800px;height:400px"
+	data-options="
 				method: 'get',
 				rownumbers: true,
 				idField: 'id',
-				treeField: 'Function',
-				loadFilter: myLoadFilter
-			">
-		<thead>
-<tr>
-<th field="Function" width="220">Name</th>
-<th field="total" width="150">Total</th>
-<span id="gcself">
-<th field="self" width="150">Self</th>
-<th field="GC" width="150">GC</th>
-<th field="GC.Self" width="150">GC.Self</th>
-<th field="alloc" width="150">Alloc</th>
-<th field="allocself" width="150">Alloc.Self</th>
-</span>
-</tr>
-		</thead>
-	</table>
-    </div>
-    </div>
-    <div id="tabs1-hotpaths">
-    <div id="hotp" style="float:left;width:800px;height:400px;">
-	<table id="hotpaths" title="Hot Paths" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
-			data-options="
-				url: 'hotpaths.JSON',
-				method: 'get',
-				rownumbers: true,
-				idField: 'id',
-				treeField: 'Function',
-				loadFilter: myLoadFilter
+				treeField: 'Function'
 			">
 		<thead>
 <tr> 
 <th field="Function" width="220">Name</th>
-<th field="total" width="150">Total</th>
+<th field="total" sortable="true" width="100">Total</th>
 
-<th field="self" width="150">Self</th>
-<th field="GC" width="150">GC</th>
-<th field="GC.Self" width="150">GC.Self</th>
-<th field="alloc" width="150">Alloc</th>
-<th field="allocself" width="150">Alloc.Self</th>
+<th field="self" width="100">Self</th>
+<th field="GC" width="100">GC</th>
+<th field="GC.Self" width="100">GC.Self</th>
+<th field="alloc" width="100">Alloc</th>
+<th field="allocself" width="100">Alloc.Self</th>
+
+</tr>
+		</thead></table>
+    </div>
+    </div>
+    <div id="tabs1-hotpaths">
+    <div id="hotp" style="float:left;width:800px;height:400px;">
+	<table id="hotpaths" url="/tempDir/hotpaths.JSON" title="Hot Paths" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
+			data-options="
+				method: 'get',
+				rownumbers: true,
+				idField: 'id',
+				treeField: 'Function'
+			">
+		<thead>
+<tr> 
+<th field="Function" width="220">Name</th>
+<th field="total" width="100">Total</th>
+
+<th field="self" width="100">Self</th>
+<th field="GC" width="100">GC</th>
+<th field="GC.Self" width="100">GC.Self</th>
+<th field="alloc" width="100">Alloc</th>
+<th field="allocself" width="100">Alloc.Self</th>
 
 </tr>
 		</thead>
