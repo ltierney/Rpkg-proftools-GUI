@@ -1,0 +1,72 @@
+---
+title: "Proftools-GUI"
+author: 
+- "Luke Tierney"
+- "Riad Jarjour"
+output: pdf_document
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+The proftools-GUI package provides a user interface to visualize and interact with much of the output from the proftools package. You can either use Shiny or the gWidgets package as the medium for the UI.
+
+We can start by loading an example stack file:
+
+`pd <- readProfileData(system.file("samples", "Rprof-lmfit-mem.out", package = "proftools-GUI"))`
+
+## Shiny
+
+We first illustrate the package use in Shiny. The `startGUI` function launches the UI with a set of initial options.
+
+`startGUI(pd, method = "shiny", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)`
+
+![Initial View For Shiny](1.png)
+
+
+\pagebreak
+
+There are two main views that can be selected with the tabs at the top. The function summary view is the default, the alternative is the hotpaths view. 
+
+
+
+Clicking on a function shows the source annotation in the bottom panel (with the corresponding line highlighted in red), and focuses the call graph on the selected function.  
+You can also edit the options above the plot to cap the maximum number of nodes displayed or to drop nodes that appear infrequently. The latter can be done by specifying a threshold. Functions that appear in a number of stacks under that threshold are dropped.
+
+![Selecting a function in shiny](2.png)
+
+\pagebreak
+
+The options at the top of the panel can be adjusted to change the units, plots, or columns shown in the table. For instance, selecting the flame graph would plot it (focused on the selected function) and hovering the mouse  on the plot would display a tooltip listing the corresponding function.  
+
+![Changing the plot](3.png)
+
+\pagebreak
+
+We can also adjust the slider to focus on the selected time period. This adjusts the plots, table and annotation to reflect only the selected period.
+
+![Using the slider to focus on a time period](4.png)
+
+
+\pagebreak
+
+## gWidgets
+
+Alternatively we can use the gWidgets package to perform the same operations
+
+`startGUI(pd, method = "gwidgets", value = "pct", gc=TRUE, self= TRUE, memory=TRUE)`
+
+
+![gWidgets Example](5.png)
+
+The same operations performed in the Shiny view are possible here, with a few additional options in the file menu. Namely, you can use the file menu to select a stack (or R) file to profile, or even enter some R code and profile it on the spot.
+
+

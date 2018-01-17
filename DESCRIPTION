@@ -7,3 +7,6 @@ Author: Luke Tierney and Riad Jarjour
 Maintainer: Luke Tierney <luke-tierney@uiowa.edu>
 Description: Provides a GUI for the proftools package
 License: GPL
+Suggests: knitr,
+    rmarkdown
+VignetteBuilder: knitr

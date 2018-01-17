@@ -9,15 +9,17 @@ Launches a GUI widget with interactive profiling tools for Rprof output,
 .R files, and R code.
 }
 \usage{
-startWidget(pd = NULL, value = c("pct", "time", "hits"), self = FALSE, 
-            srclines = TRUE, gc = TRUE, maxdepth = 10, treeType = "funSum", 
-            toolkit = "RGtk2")
+startGUI(pd = NULL, method = c("gwidgets", "shiny"),
+         value = c("pct", "time", "hits"), self = FALSE, 
+         gc = TRUE, memory = FALSE, srclines = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{pd}{
- profile data as returned by \code{readProfileData} or a character
- vector naming a profile data file.
+ profile data as returned by \code{readProfileData}.
+}
+  \item{method}{
+ character; use gwidgets view or shiny.
 }
   \item{value}{
  character; show result as percentage, time, or hits.
@@ -25,30 +27,23 @@ startWidget(pd = NULL, value = c("pct", "time", "hits"), self = FALSE,
   \item{self}{
  logical; include self cost or not.
 }
-  \item{srclines}{
- logical; include source information, if available, or not.
-}
   \item{gc}{
  logical; include GC information or not.
 }
-  \item{maxdepth}{
- integer; In treeType = "hotPaths", stacks are truncated to have at most
- \code{maxdepth} elements.
+  \item{gc}{
+ logical; include memory information or not.
 }
-  \item{treeType}{
- "funSum" gives function summary view listing all functions, while "hotPaths" 
-gives the Hot Paths view.
+  \item{srclines}{
+ logical; include source information, if available, or not.
 }
-  \item{toolkit}{
- Underlying toolkit to use. Can be either "RGtk2" (recommended) or "tcltk". 
-}
+
 }
 \details{
- All the arguments can be altered from within the widget, thus specifying them 
-when calling the function is not necessary. Furthermore, the File menu can be 
+ All the arguments can be altered from within the UI, thus specifying them 
+when calling the function is not necessary. Furthermore, the File menu in the 
+gWidgets view can be 
 used to select another stack file, to select and profile an R file, or to
- profile some R code. Thus one can simply call startWidget(NULL) and proceed 
- from there.
+ profile some R code.
  
  Source annotation will not be shown if the widget can't find the source files,
  thus it is crucial to make sure the working directory is inline with the source 
@@ -59,8 +54,6 @@ used to select another stack file, to select and profile an R file, or to
  from the source files. If that also can't be found, a final attempt will be made 
  to show annotation for the first callee for which annotation is available. 
  
-Right clicking on a function in the tree gives the option to plot a call graph, 
-tree map, or flame graph, all focused on that particular function.
 }
 \value{
 No value is returned
@@ -77,9 +70,6 @@ annotation will be shown because the widget can't find the source files.
 \seealso{
 \code{\link{Rprof}},
 \code{\link{readProfileData}},
-\code{\link{annotateSource}},
-\code{\link{hotPaths}},
-\code{\link{funSummary}}
 }
 \examples{
 
@@ -88,38 +78,17 @@ annotation will be shown because the widget can't find the source files.
 library(proftools)
 library(gWidgets2)
 library(gWidgets2RGtk2)
+library(shiny)
 
+## Read the profile data from the stack file 
+pd <- readProfileData(system.file("samples", "Rprof-lmfit-mem.out", package = "proftools-GUI"))
 
-## Only launch the widget menu, proceed from there
-startWidget(NULL)
+## Start the GUI using shiny 
+startGUI(pd, method = "shiny", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)
 
+## Start the GUI using gWidgets
+startGUI(pd, method = "gwidgets", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)
 
-## Source annotations for the below example are not shown since source files 
-## are not in the working directory
-pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
-                                  package="proftools"))
-startWidget(pd)
-
-## We can fix that by temporarily changing the working directory
-## to the samples directory in the proftools package
-oldDir <- getwd()
-setwd(system.file("samples", package="proftools"))
-pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
-                                  package="proftools"))
-startWidget(pd)
-
-## When done, change back the working directory
-setwd(oldDir)
-
-
-## A couple of other examples
-pd <- readProfileData(system.file("samples", "Rprof-rec.out", 
-                                  package="proftools"))
-startWidget(pd)
-
-pd <- readProfileData(system.file("samples", "Rprof-rec1.out", 
-                                  package="proftools"))
-startWidget(pd)
 }
 }
 \keyword{profiling}
