@@ -156,7 +156,7 @@ offspringFunSum <- function(path, win) {
     return(offspringDF)
 }
                      
-startGUI <- function(pd = NULL, method = c("gwidgets", "shiny"),
+proftoolsGUI <- function(pd = NULL, method = c("gwidgets", "shiny"),
                      value = c("pct", "time", "hits"), self = FALSE, 
                      gc = TRUE, memory = FALSE, srclines = TRUE){
     value <- match.arg(value)
@@ -707,7 +707,7 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory) 
     tempDir <- tempdir()
     dir.create(file.path(tempDir, "tempDir"), showWarnings = FALSE)
-    addResourcePath("tempDir", file.path(tempDir, "tempDir"))
+    shiny::addResourcePath("tempDir", file.path(tempDir, "tempDir"))
     generateJSON(pd, tempDir, winHotpaths, winFunsum)
     shiny::runApp(path)
 }
@@ -922,6 +922,7 @@ checkHandler <- function(h, ...){
     processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
                   self.gc[2], self.gc[3], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
+
 myShiny <- function(input, output, session) {
     pd <- shinyPD()
     arg <- arg()
@@ -1055,12 +1056,13 @@ myShiny <- function(input, output, session) {
     output$plot <- shiny::renderPlot({
         maxNodes <- as.numeric(input$maxNodes)
         dropBelow <- as.numeric(input$dropBelow)
+        filteredPD <- filtered()
         if(nchar(input$fcnName)){
             ## get srcAnnotate from reactive expression
             srcAnnotate <- srcAnnotate()
             path <- rev(unlist(strsplit(input$fcnName, ",", fixed = TRUE)))
             parseLine <- parseLineInfo(path[length(path)], srcAnnotate)
-            filtered <- filterProfileData(pd, focus = parseLine$fcnName)
+            filtered <- filterProfileData(filteredPD, focus = parseLine$fcnName)
             if(input$plotType == 'plotCallgraph')
                 plotProfileCallGraph(filtered, style = google.style,
                                      maxnodes = maxNodes,
@@ -1073,16 +1075,22 @@ myShiny <- function(input, output, session) {
                 plotObj <<- flameGraph(filtered, order="time")
         }
         else if(input$plotType == 'plotCallgraph')
-            plotProfileCallGraph(pd, style = google.style, 
+            plotProfileCallGraph(filteredPD, style = google.style, 
                                  maxnodes = maxNodes,
                                  total.pct = dropBelow)
         else if(input$plotType == 'plotTreemap')
-            plotObj <<- calleeTreeMap(pd)
+            plotObj <<- calleeTreeMap(filteredPD)
         else if(input$plotType == 'plotFlamegraph')
-            plotObj <<- flameGraph(pd, order="hot")
+            plotObj <<- flameGraph(filteredPD, order="hot")
         else if(input$plotType == 'plotTimegraph')
-            plotObj <<- flameGraph(pd, order="time")
+            plotObj <<- flameGraph(filteredPD, order="time")
   })    
 
+}
+
+GUIGadget <- function(){
+    path <- system.file("appdir", package="proftoolsGUI")
+    shiny::runGadget(shiny::shinyAppDir(path),
+                     viewer = shiny::browserViewer())
 }
 # Always keep an empty final line or annotateSource will break

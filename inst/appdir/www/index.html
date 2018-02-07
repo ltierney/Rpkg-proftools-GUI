@@ -93,6 +93,7 @@ function makeFunsum(){
                                 path += ',' + parentRow.name;
                                 tempRow = parentRow.id
                             }
+                            globalFunPath = path;
                             Shiny.unbindAll();
                             $("#fcnName").val(path);
                             Shiny.bindAll();
@@ -108,6 +109,9 @@ function makeFunsum(){
         else{
             $('#funsum').treegrid('collapseAll'); 
             $('#funsum').treegrid('expandTo', currentId); 
+            Shiny.unbindAll();
+            $("#fcnName").val(globalFunPath);
+            Shiny.bindAll();
         }
         countCollapse = 1;
          //$('#hotp').slideToggle("slow");
@@ -137,6 +141,7 @@ function makeHotpaths(){
                                 path += ',' + parentRow.name;
                                 tempRow = parentRow.id
                             }
+                            globalHotPath = path;
                             Shiny.unbindAll();
                             $("#fcnName").val(path);
                             Shiny.bindAll();
@@ -151,6 +156,9 @@ function makeHotpaths(){
         else{
             $('#hotpaths').treegrid('collapseAll');
             $('#hotpaths').treegrid('expandTo', currentIdHot); 
+            Shiny.unbindAll();
+            $("#fcnName").val(globalHotPath);
+            Shiny.bindAll();
         }
         countCollapseHot = 1;
          //$('#hotp').slideToggle("slow");
@@ -328,10 +336,10 @@ function makeTrees(){
   </ul> 
   <br /> 
 	Plot Type: <select name="plotType">
-  <option value="plotCallgraph" selected>Plot Callgraph</option>
-  <option value="plotTreemap">Plot Tree Map</option>
-  <option value="plotFlamegraph">Plot Flame Graph</option>
-  <option value="plotTimegraph">Plot Time Graph</option>
+  <option value="plotCallgraph" selected>Callgraph</option>
+  <option value="plotTreemap">Tree Map</option>
+  <option value="plotFlamegraph">Flame Graph</option>
+  <option value="plotTimegraph">Time Graph</option>
 </select> 
 	Units: <select id="value" name="value">
   <option value="pct">pct</option> 
@@ -408,7 +416,7 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
      
 
     <p style="clear:both; margin-top:15px"></p>
-    <p id="fileName" class="shiny-text-output panel-header">Filename: </p>
+    <p id="fileName" class="shiny-text-output panel-header">File: </p>
      <pre id="fcnAnnot" class="shiny-html-output" style="border: 1px double silver;height: 400px; width: 1307px; position:absolute; top:656px;overflow-y:scroll;"></pre>
     <pre id="test2"></pre>
 <div class="shiny-text-output" id="labelObj"></div>
