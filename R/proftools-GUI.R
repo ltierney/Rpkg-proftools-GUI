@@ -712,6 +712,51 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     shiny::runApp(path)
 }
 
+prepareShiny <- function(pd, value = c("pct", "time", "hits"),
+                     self = FALSE, gc = TRUE, memory = FALSE, srclines = TRUE,
+                     maxdepth = 10){
+    value <- match.arg(value)
+    if(!pd$haveMem) memory <- FALSE 
+    if(!pd$haveGC) gc <- FALSE 
+    
+    pd$files <- normalizePath(pd$files)
+    shinyPD(pd)
+    arg(list(self, gc, memory, value))
+    srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
+    # cols <- c("<th field=\"self\" width=\"150\">Self</th>",
+              # "<th field=\"GC\" width=\"150\">GC</th>",
+              # "<th field=\"GCself\" width=\"150\">GC.Self</th>")
+    # if(!gc)
+        # cols[2:3] <- ""
+    # if(!self)
+        # cols[c(1,3)] <- ""
+    path <- system.file("appdir", package="proftoolsGUI")
+    #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
+    # index <- readLines(file.path(path, "www", "index.html"))
+    # index[288] <- paste0('  <option value="', value, '" selected>', value, '</option>')
+    # checked <- ifelse(c(self, gc), rep(' checked', 2), c('', ''))
+    # index[293:295] <- paste0(c('<input id="total" type="hidden" name="count" value="',
+                               # '<input id="self" type="checkbox" name="self" value="1"',
+                               # '<input id="gc" type="checkbox" name="gc" value="1" '),
+                             # c(pd$total, checked), c('">', '> Self', '> GC'))
+    # write(index,file.path(path, "www", "index.html"))
+    winHotpaths <- winFunsum <- c(1)
+    attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
+    attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc, memory)
+    attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines=TRUE, 
+                                                           gc, memory, maxdepth=10)
+    # callSum <- callSummary(pd, byTotal = TRUE, value, srclines=TRUE, gc)
+    # callSum$fun <- paste(" ", callSum$fun, sep="")
+    callSumDF <- prepareCallSum(pd, byTotal = TRUE, value, srclines, gc, memory)
+    attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, self, gc, value, memory)
+    fcnSummary <- prepareFcnSummary(pd, byTotal = TRUE, value, srclines, gc, memory)
+    attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory) 
+    tempDir <- tempdir()
+    dir.create(file.path(tempDir, "tempDir"), showWarnings = FALSE)
+    shiny::addResourcePath("tempDir", file.path(tempDir, "tempDir"))
+    generateJSON(pd, tempDir, winHotpaths, winFunsum)
+}
+
 outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'){
     ## Below runs only if Shiny, since fcnAnnot (which is the annotion textbox)
     ## will be null in this case    
@@ -1090,6 +1135,21 @@ myShiny <- function(input, output, session) {
 
 GUIGadget <- function(){
     path <- system.file("appdir", package="proftoolsGUI")
+    if(.Platform$OS.type == 'unix'){
+        profDir <- '~/.rstudio-desktop/profiles-cache/'
+    } 
+    else {
+        profDir <- paste0('C:\\Users\\', Sys.getenv("USERNAME"), '\\AppData\\Local\\RStudio-Desktop\\profiles-cache')
+    }
+    details = file.info(paste0(profDir, .Platform$file.sep, list.files(profDir,pattern="*.Rprof")))
+    details = details[with(details, order(as.POSIXct(mtime), decreasing = TRUE)), ]
+    files = rownames(details)
+    if(length(files) > 0){
+        files <- files[1]
+        pd <- readProfileData(files)
+    }
+    else pd <- readProfileData(system.file("samples", "Rprof-lmfit-mem.out", package = "proftoolsGUI"))
+    prepareShiny(pd)
     shiny::runGadget(shiny::shinyAppDir(path),
                      viewer = shiny::browserViewer())
 }
