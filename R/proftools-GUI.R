@@ -183,6 +183,13 @@ startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
                   win)
 }
 
+attemptAnnot <- function(pd, value, gc, show=FALSE){
+    tryCatch(srcAnnotate <- annotateSource(pd, value, gc, show=FALSE), 
+             error = function(e) srcAnnotate <<- NULL,
+             warning = function(w){srcAnnotate <<- NULL})
+    srcAnnotate
+}
+
 processWidget <- function(pd, value = c("pct", "time", "hits"),
                           self = FALSE, srclines = TRUE, gc = TRUE, memory = FALSE,
                           maxdepth = 10, interval, treeType="funSum", win){
@@ -234,13 +241,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         if(!is.null(interval))
             filteredPD <- filterProfileData(pd, interval = interval)
         else filteredPD <- pd
-        attemptAnnot <- function(){
-            tryCatch(srcAnnotate <- annotateSource(filteredPD, value, gc, show=FALSE), 
-                     error = function(e) srcAnnotate <<- NULL,
-                     warning = function(w){srcAnnotate <<- NULL})
-            srcAnnotate
-        }
-        srcAnnotate <- attemptAnnot(); conf <- FALSE
+        srcAnnotate <- attemptAnnot(filteredPD, value, gc, show=FALSE); conf <- FALSE
         if(is.null(srcAnnotate))
             conf <- gconfirm(paste0('Could not find source files in the ',
                                     'working directory, press OK to locate the', 
@@ -722,7 +723,7 @@ prepareShiny <- function(pd, value = c("pct", "time", "hits"),
     pd$files <- normalizePath(pd$files)
     shinyPD(pd)
     arg(list(self, gc, memory, value))
-    srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
+    srcAnnotate <<- attemptAnnot(pd, value, gc, show=FALSE)
     # cols <- c("<th field=\"self\" width=\"150\">Self</th>",
               # "<th field=\"GC\" width=\"150\">GC</th>",
               # "<th field=\"GCself\" width=\"150\">GC.Self</th>")
@@ -967,17 +968,44 @@ checkHandler <- function(h, ...){
     processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
                   self.gc[2], self.gc[3], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
-
+file.choose2 <- function(...) {
+  pathname <- NULL;
+  tryCatch({
+    pathname <- file.choose();
+  }, error = function(ex) {
+  })
+  pathname;
+}
 myShiny <- function(input, output, session) {
-    pd <- shinyPD()
+# shiny::observe({
+    # insertUI(
+      # selector = "#uploadHolder",
+      # where = "beforeBegin",
+      # ui = fileInput(paste0("uploadStack", input$self), "Upload Stack File", multiple = FALSE, accept = ".Rprof", 
+                     # buttonLabel = "Browse...", placeholder = "No file selected")
+    # )
+# })
+
+
+    pdFun <- shiny::reactive({
+        if(!is.null(input$uploadStack)){
+            pdTemp <- readProfileData(input$uploadStack$datapath)
+            cat(input$uploadStack$datapath)
+            prepareShiny(pdTemp)
+            pdTemp
+        }
+        else shinyPD()
+    })
     arg <- arg()
     filtered <- shiny::reactive({
+        pd <- pdFun()
         if(input$sliderLower != '')
             filterProfileData(pd, interval = c(input$sliderLower, input$sliderUpper))
         else
             pd
     })
     shiny::observe({
+        pd <- pdFun()
         session$sendCustomMessage(type = 'have', 
                                   message = list(haveMem = as.numeric(pd$haveMem),
                                                  haveGC = as.numeric(pd$haveGC),
@@ -1037,6 +1065,8 @@ myShiny <- function(input, output, session) {
                                                  memory = input$memory))
     })
     
+    output$fileChoose <- shiny::renderPrint({ cat(input$uploadStack$datapath) })
+    
     session$onSessionEnded(function() {
         shiny::stopApp()
     })
@@ -1072,10 +1102,10 @@ myShiny <- function(input, output, session) {
     output$fileName <- shiny::renderPrint({
         if(nchar(input$fcnName)){
             fileName <- fName()
-            cat(paste('Filename: ', fileName))
+            cat(paste('File: ', fileName))
         }
         else
-            cat('Filename: ')
+            cat('File: ')
     })
     
     plotObj <- NULL

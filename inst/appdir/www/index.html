@@ -329,6 +329,21 @@ function makeTrees(){
   </style>
 </head>
 <body> 
+<div class="form-group shiny-input-container">
+  <label>Upload Stack File</label>
+  <div class="input-group">
+    <label class="input-group-btn">
+      <span class="btn btn-default btn-file">
+        Browse...
+        <input id="uploadStack" name="uploadStack" type="file" style="display: none;" accept=".Rprof"/>
+      </span>
+    </label>
+    <input type="text" class="form-control" placeholder="No file selected" readonly="readonly"/>
+  </div>
+  <div id="uploadStack_progress" class="progress progress-striped active shiny-file-input-progress">
+    <div class="progress-bar"></div>
+  </div>
+</div>
 <div id="tab-container" class="tab-container">
   <ul class='etabs'>
     <li class='tab'><a href="#tabs1-funsum">Function Summary</a></li>
@@ -464,5 +479,6 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
                     <!-- </label> -->
                     <!-- <input class="form-control" placeholder="No file selected" readonly="readonly" type="text"> -->
                   <!-- </div> -->
+                  <div id="fileChoose">hi</div>
 </body>
 </html>
