@@ -613,6 +613,7 @@ parseSon <- function(i, offspringDF, path, id, treetype, win){
     fields <- paste(sapply(fieldNames, 
                            function(x) paste0('"',x,'":"', offspringDF[[x]][i], '"')),
                     collapse = ",")
+                    
     fields <- paste('{"id":', newID, ',', fields, parent)
     if(length(path) && (treetype == "funSum")){
         # lastTwo <- c(getFname(path[length(path)]), 
@@ -625,7 +626,7 @@ parseSon <- function(i, offspringDF, path, id, treetype, win){
     else
         makeSons <- TRUE
     if(offspringDF$haveSons[i] && makeSons)
-        fields <- paste(fields, "},",
+        fields <- paste(fields, ',"state":"closed"},',
                    parseOffspring(c(path, as.character(offspringDF$Function[i]))
                                   , treetype, win, newID))
     else
