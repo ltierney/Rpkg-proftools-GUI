@@ -4,7 +4,7 @@
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 	<meta name="keywords" content="jquery,ui,easy,easyui,web">
 	<meta name="description" content="easyui help you build your web page easily!">
-	<title>Lazy loading nodes in TreeGrid - jQuery EasyUI Demo</title>
+	<title>ProftoolsGUI Profiling</title>
 	<link rel="stylesheet" type="text/css" href="themes/default/easyui.css">
 	<link rel="stylesheet" type="text/css" href="themes/icon.css">
 	<link rel="stylesheet" type="text/css" href="styles/demo.css">
@@ -55,7 +55,7 @@ currentId = 0;
 currentIdHot = 0;
 currentName = '';
 currentNameHot = '';
-
+countPickedHotpaths = 0;
 $(document).on('click', 'span', function () {
         
     });
@@ -71,10 +71,10 @@ function makeFunsum(){
                     method: 'get',
                     rownumbers: true,
                     idField: 'id',
-                    treeField: 'Function'
-             /*       columns:[[ {field:'Function',title:'Name'},{field:'total',title:'Total'},
+                    treeField: 'Function',/*
+                    columns:[[ {field:'Function',title:'Name'},{field:'total',title:'Total'},
                     {field:'self',title:'Self'}, {field:'alloc',title:'Alloc'},{field:'allocself',title:'Alloc Self'},
-                    {field:'GC',title:'GC'},{field:'GCself',title:'GCself'}]], 
+                    {field:'GC',title:'GC'},{field:'GCself',title:'GCself'}]], */
                     onClickCell: function(field,row){
                         tempRow = row.id; 
                         currentId = row.id;
@@ -98,7 +98,7 @@ function makeFunsum(){
                             $("#fcnName").val(path);
                             Shiny.bindAll();
                         }
-                    }//,*/
+                    }//,
                     //onLoadSuccess: function(row, data) {$('#funsum').treegrid('collapseAll');}
                 });
     hideShowCols();
@@ -123,8 +123,12 @@ function makeHotpaths(){
     $("#fcnName").val(currentNameHot);
     Shiny.bindAll();
     $('#hotpaths').treegrid({
+    				url:"/tempDir/hotpaths.JSON",method: 'get',
+				rownumbers: true,
+				idField: 'id',
+				treeField: 'Function',
                     onClickCell: function(field,row){
-                        tempRow = row.id; 
+                         tempRow = row.id; 
                         currentIdHot = row.id;
                         currentNameHot = row.Function;
                         selected = $('#hotpaths').treegrid('getSelected');
@@ -149,7 +153,7 @@ function makeHotpaths(){
                     }
                 });
     hideShowCols();
- /*   setTimeout(
+/*    setTimeout(
         function() {
         if(countCollapseHot == 0)
             $('#hotpaths').treegrid('collapseAll');
@@ -169,14 +173,14 @@ Shiny.addCustomMessageHandler("updateTable",
     function(message) {
         makeFunsum();
         makeHotpaths();
-        $('#tab-container').bind('easytabs:before', function(evt, tab, panel, data) {
+        $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
             if(panel.selector == '#tabs1-hotpaths'){
                 $('#tabSelected').val('hotpaths');
-                makeHotpaths(); 
+                if(countPickedHotpaths == 0) makeHotpaths(); countPickedHotpaths++;
             }
             else if(panel.selector == '#tabs1-funsum'){
                 $('#tabSelected').val('funsum');
-                makeFunsum();
+                //makeFunsum();
             }
         });
     }
@@ -329,7 +333,7 @@ function makeTrees(){
   </style>
 </head>
 <body> 
-<div class="form-group shiny-input-container">
+<!--<div class="form-group shiny-input-container">
   <label>Upload Stack File</label>
   <div class="input-group">
     <label class="input-group-btn">
@@ -343,7 +347,7 @@ function makeTrees(){
   <div id="uploadStack_progress" class="progress progress-striped active shiny-file-input-progress">
     <div class="progress-bar"></div>
   </div>
-</div>
+</div> -->
 <div id="tab-container" class="tab-container">
   <ul class='etabs'>
     <li class='tab'><a href="#tabs1-funsum">Function Summary</a></li>
@@ -398,13 +402,13 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
     </div>
     <div id="tabs1-hotpaths">
     <div id="hotp" style="float:left;width:800px;height:400px;">
-	<table id="hotpaths" url="/tempDir/hotpaths.JSON" title="Hot Paths" class="easyui-treegrid" style="float:left;width:800px;height:400px" 
-			data-options="
+	<table id="hotpaths" title="Hot Paths" style="float:left;width:800px;height:400px" 
+		<!--	data-options="
 				method: 'get',
 				rownumbers: true,
 				idField: 'id',
-				treeField: 'Function'
-			">
+				treeField: 'Function' 
+			"--> >
 		<thead>
 <tr> 
 <th field="Function" width="220">Name</th>
@@ -474,6 +478,6 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
                     <!-- </label> -->
                     <!-- <input class="form-control" placeholder="No file selected" readonly="readonly" type="text"> -->
                   <!-- </div> -->
-                  <div id="fileChoose">hi</div>
+                  <div id="fileChoose"> </div>
 </body>
 </html>
