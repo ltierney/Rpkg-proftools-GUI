@@ -55,7 +55,10 @@ currentId = 0;
 currentIdHot = 0;
 currentName = '';
 currentNameHot = '';
+globalFunPath = '';
+globalHotPath = '';
 countPickedHotpaths = 0;
+countPickedFunSum = 0;
 $(document).on('click', 'span', function () {
         
     });
@@ -76,6 +79,7 @@ function makeFunsum(){
                     {field:'self',title:'Self'}, {field:'alloc',title:'Alloc'},{field:'allocself',title:'Alloc Self'},
                     {field:'GC',title:'GC'},{field:'GCself',title:'GCself'}]], */
                     onClickCell: function(field,row){
+                        
                         tempRow = row.id; 
                         currentId = row.id;
                         currentName = row.Function;
@@ -128,7 +132,8 @@ function makeHotpaths(){
 				idField: 'id',
 				treeField: 'Function',
                     onClickCell: function(field,row){
-                         tempRow = row.id; 
+                        globalRowHot = row;
+                        tempRow = row.id; 
                         currentIdHot = row.id;
                         currentNameHot = row.Function;
                         selected = $('#hotpaths').treegrid('getSelected');
@@ -168,19 +173,49 @@ function makeHotpaths(){
          //$('#hotp').slideToggle("slow");
         }, 1000); */
 }
-
+function processTabHotpaths(){
+    if(globalHotPath != '') {
+        Shiny.unbindAll();
+        $("#fcnName").val(globalHotPath);
+        Shiny.bindAll();
+        setTimeout(
+            function() {
+        $('#hotpaths').treegrid('expandTo', currentIdHot); }, 1000);
+    }
+    countPickedHotpaths++;
+}
+function processTabFunSum(){
+    if(globalFunPath != ''){
+        Shiny.unbindAll();
+        $("#fcnName").val(globalFunPath);
+        Shiny.bindAll();
+        setTimeout(
+            function() {
+        $('#funsum').treegrid('expandTo', currentId); }, 1000);
+    }
+    countPickedFunSum++;
+}
 Shiny.addCustomMessageHandler("updateTable",
     function(message) {
-        makeFunsum();
-        makeHotpaths();
+        countPickedHotpaths = 0;
+        countPickedFunSum = 0;
+        if($('#tabSelected').val() == 'hotpaths'){
+            makeHotpaths();
+            processTabHotpaths();
+        }
+        else{
+            makeFunsum();
+            processTabFunSum();
+        }
+
         $('#tab-container').bind('easytabs:after', function(evt, tab, panel, data) {
             if(panel.selector == '#tabs1-hotpaths'){
                 $('#tabSelected').val('hotpaths');
-                if(countPickedHotpaths == 0) makeHotpaths(); countPickedHotpaths++;
+                if(countPickedHotpaths == 0) makeHotpaths(); processTabHotpaths();
             }
             else if(panel.selector == '#tabs1-funsum'){
                 $('#tabSelected').val('funsum');
-                //makeFunsum();
+                if(countPickedFunSum == 0) makeFunsum(); processTabFunSum();
             }
         });
     }
