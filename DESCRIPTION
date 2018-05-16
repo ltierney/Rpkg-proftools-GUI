@@ -8,5 +8,7 @@ Maintainer: Luke Tierney <luke-tierney@uiowa.edu>
 Description: Provides a GUI for the proftools package
 License: GPL
 Suggests: knitr,
-    rmarkdown
+    rmarkdown, gWidgets2, shiny
+Imports: proftools
 VignetteBuilder: knitr
+RoxygenNote: 6.0.1

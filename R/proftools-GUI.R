@@ -161,9 +161,9 @@ proftoolsGUI <- function(pd = NULL, method = c("gwidgets", "shiny"),
                      gc = TRUE, memory = FALSE, srclines = TRUE){
     value <- match.arg(value)
     if(method == "gwidgets")
-        startWidget(pd, value, self, gc, srclines)
+        startWidget(pd, value, self, gc, memory, srclines)
     else if(method == "shiny")
-        runShiny(pd, value, self, gc, srclines)
+        runShiny(pd, value, self, gc, memory, srclines)
 }
                         
                         
@@ -175,7 +175,7 @@ startWidget <- function(pd = NULL, value = c("pct", "time", "hits"),
         pd <- readProfileData(pd)
     value <- match.arg(value)
     options(guiToolkit = toolkit)
-    win <- gwindow("Hot Path Tree", height=700, width=1000)
+    win <- gWidgets2::gwindow("Hot Path Tree", height=700, width=1000)
     ## Remove widgetMenu from previous session
     # if(exists("widgetMenu")) 
         # remove(widgetMenu, pos=.GlobalEnv)
@@ -193,27 +193,27 @@ attemptAnnot <- function(pd, value, gc, show=FALSE){
 processWidget <- function(pd, value = c("pct", "time", "hits"),
                           self = FALSE, srclines = TRUE, gc = TRUE, memory = FALSE,
                           maxdepth = 10, interval, treeType="funSum", win){
-    group <- ggroup(horizontal=FALSE,container=win)
+    group <- gWidgets2::ggroup(horizontal=FALSE,container=win)
     # we use if statement below to preserve the menu if it exists
     # if it does, we modify its svalue later
     if(is.null(attr(win, 'env')))
         attr(win, 'env') <- new.env()
     attr(win, 'env')$self.gc <- c(self, gc, memory)
     if(!is.null(pd)){
-        buttonCont <- ggroup(container=group)
+        buttonCont <- gWidgets2::ggroup(container=group)
         passedList <- list(pd=pd, value=value, self=self, srclines=srclines, 
                            gc=gc, memory = memory, maxdepth=maxdepth, interval=interval,
                            treeType=treeType, win=win, group=group)
-        glabel("Summary: ", container=buttonCont)
+        gWidgets2::glabel("Summary: ", container=buttonCont)
         SummaryView <- ifelse(treeType == "funSum", "Function", "Hot Paths")
-        summaryCombo <- gcombobox(c(SummaryView, "Function", "Hot Paths"), 
+        summaryCombo <- gWidgets2::gcombobox(c(SummaryView, "Function", "Hot Paths"), 
                                   container=buttonCont, handler=summaryHandler, 
                                   action=passedList)
-        size(summaryCombo) <- c(100, -1)
-        glabel("Units: ", container=buttonCont)
-        units <- gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
+        gWidgets2::size(summaryCombo) <- c(100, -1)
+        gWidgets2::glabel("Units: ", container=buttonCont)
+        units <- gWidgets2::gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
                            handler=unitsHandler, action=passedList)
-        size(units) <- c(50, -1)
+        gWidgets2::size(units) <- c(50, -1)
         checkBoxes <- c("self", "gc", "memory"); checked=c(self,gc,memory)
         if(!pd$haveGC){
             checkBoxes <- checkBoxes[-2]
@@ -225,19 +225,19 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
             checked <- checked[-3]
             memory <- FALSE
         }
-        gcheckboxgroup(checkBoxes, checked=checked, 
+        gWidgets2::gcheckboxgroup(checkBoxes, checked=checked, 
                                    container=buttonCont, horizontal=T,
                                    handler=checkHandler, action=passedList)
         addSpinners(pd, value, self, srclines, gc, memory, maxdepth, interval, treeType, win, group)
-        spinnerCont <- gpanedgroup(container=group)
-        ggroup(container=spinnerCont)
-        spinnerGroup <- ggroup(container=spinnerCont)
-        svalue(spinnerCont) <- .5
-        glabel("Max Nodes: ", container=spinnerGroup)
-        maxnodes <- gspinbutton(from=5, to=200, by=1, value=30, cont=spinnerGroup)
-        glabel("Drop Threshold: ", container=spinnerGroup)
-        dropBelow <- gspinbutton(from=0, to=99, by=1, value=0, cont=spinnerGroup)
-        trimCallgraph <- gbutton("Show trimmed Callgraph", cont=spinnerGroup)
+        spinnerCont <- gWidgets2::gpanedgroup(container=group)
+        gWidgets2::ggroup(container=spinnerCont)
+        spinnerGroup <- gWidgets2::ggroup(container=spinnerCont)
+        gWidgets2::svalue(spinnerCont) <- .5
+        gWidgets2::glabel("Max Nodes: ", container=spinnerGroup)
+        maxnodes <- gWidgets2::gspinbutton(from=5, to=200, by=1, value=30, cont=spinnerGroup)
+        gWidgets2::glabel("Drop Threshold: ", container=spinnerGroup)
+        dropBelow <- gWidgets2::gspinbutton(from=0, to=99, by=1, value=0, cont=spinnerGroup)
+        trimCallgraph <- gWidgets2::gbutton("Show trimmed Callgraph", cont=spinnerGroup)
         if(!is.null(interval))
             filteredPD <- filterProfileData(pd, interval = interval)
         else filteredPD <- pd
@@ -249,7 +249,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
                                     ' to continue without source annotations.'), 
                              title="Source files not found", icon="warning")
         if(conf){
-            directory <- gfile(type="selectdir")
+            directory <- gWidgets2::gfile(type="selectdir")
             setwd(directory)
             srcAnnotate <- attemptAnnot()
         }
@@ -263,57 +263,57 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         update(win)
     }
     plot.new()
-    plotProfileCallGraph(pd, style = google.style, maxnodes = svalue(maxnodes),
-                         total.pct = svalue(dropBelow))
+    plotProfileCallGraph(pd, style = google.style, maxnodes = gWidgets2::svalue(maxnodes),
+                         total.pct = gWidgets2::svalue(dropBelow))
 }
 
 addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                       srclines = TRUE, gc = TRUE, memory = FALSE, maxdepth=10, interval, 
                       treeType, win, group){
     if(is.null(interval)) interval <- c(1, pd$total)
-    spinnerCont <- gframe(text = "Filter Selection", container=group, 
+    spinnerCont <- gWidgets2::gframe(text = "Filter Selection", container=group, 
                          horizontal = FALSE)
-    sCont <- ggroup(container=spinnerCont)
-    glabel("Start: ", container=sCont)
+    sCont <- gWidgets2::ggroup(container=spinnerCont)
+    gWidgets2::glabel("Start: ", container=sCont)
     s1Handler <- function(h, ...){
-        if(svalue(s1) > svalue(s2))
-            svalue(s1) <- svalue(s2)
-        interval <<- c(svalue(s1), svalue(s2))
+        if(gWidgets2::svalue(s1) > gWidgets2::svalue(s2))
+            gWidgets2::svalue(s1) <- gWidgets2::svalue(s2)
+        interval <<- c(gWidgets2::svalue(s1), gWidgets2::svalue(s2))
     }
     s2Handler <- function(h, ...){
-        if(svalue(s2) < svalue(s1))
-            svalue(s2) <- svalue(s1)
-        interval <<- c(svalue(s1), svalue(s2))
+        if(gWidgets2::svalue(s2) < gWidgets2::svalue(s1))
+            gWidgets2::svalue(s2) <- gWidgets2::svalue(s1)
+        interval <<- c(gWidgets2::svalue(s1), gWidgets2::svalue(s2))
     }
     filterHandler <- function(h, ...){
-        delete(win, group)
+        gWidgets2::delete(win, group)
         processWidget(pd, value, self, srclines, gc, memory, maxdepth, 
                       interval, treeType, win)
         
     }    
-    s1 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[1], 
+    s1 <- gWidgets2::gspinbutton(from=1, to=pd$total, by=1, value=interval[1], 
                   handler = s1Handler, cont=sCont)
-    glabel("Stop: ", container=sCont)
-    s2 <- gspinbutton(from=1, to=pd$total, by=1, value=interval[2], 
+    gWidgets2::glabel("Stop: ", container=sCont)
+    s2 <- gWidgets2::gspinbutton(from=1, to=pd$total, by=1, value=interval[2], 
                   handler = s2Handler, cont=sCont) 
-    gbutton("Filter Selection", handler = filterHandler, 
+    gWidgets2::gbutton("Filter Selection", handler = filterHandler, 
                             cont=sCont)
 }
 # addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                     # srclines = TRUE, gc = TRUE, maxdepth=10, interval, treeType, 
                     # win, group){
     # browseStack <- function(h, ...){
-        # stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
+        # stackBrowse <- gWidgets2::gfile("Choose a Stack file", quote=FALSE, filter = 
                              # list("Stack files"=list(patterns=c("*.out", "*.txt"))))
         # pd <- readProfileData(stackBrowse)
         # stopIfEmpty(pd, group)
-        # delete(win, group)
+        # gWidgets2::delete(win, group)
         # processWidget(pd, value, self, srclines, gc, maxdepth, interval, 
                       # treeType, win)
     # }
     
     # browseR <- function(h, ...){
-        # sourceBrowse <- gfile("Source and profile an R file", quote=FALSE,
+        # sourceBrowse <- gWidgets2::gfile("Source and profile an R file", quote=FALSE,
                               # filter = list("Stack files"=
                                             # list(patterns=c("*.R", "*.txt"))))
         # Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE)
@@ -321,7 +321,7 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         # Rprof(NULL)
         # pd <- readProfileData(tmp)
         # stopIfEmpty(pd, group)
-        # delete(win, group)
+        # gWidgets2::delete(win, group)
         # processWidget(filterProfileData(pd, focus = "source"), value, self,
                       # srclines, gc, maxdepth, interval, treeType, win)
         # unlink(tmp)
@@ -330,42 +330,42 @@ addSpinners <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         # profileCode(pd, value, self, srclines, gc, maxdepth, NULL, treeType, win, group)
     # }    
     # mn <- list(); mn$File <- list();
-    # mn$File[['Select a stack file']] <- gaction("Select a stack file", 
+    # mn$File[['Select a stack file']] <- gWidgets2::gaction("Select a stack file", 
                                                 # handler=browseStack) 
-    # mn$File[['Source an R file']] <- gaction("Source an R file", handler=browseR)   
-    # mn$File[['Profile some R code']] <- gaction("Profile some R code", 
+    # mn$File[['Source an R file']] <- gWidgets2::gaction("Source an R file", handler=browseR)   
+    # mn$File[['Profile some R code']] <- gWidgets2::gaction("Profile some R code", 
                                                 # handler=profileRCode) 
     # if(!is.null(interval))
         # filteredPD <- filterProfileData(pd, interval = interval)
     # else filteredPD <- pd
     # mn$Plot <- list();
     # attr(win, 'env')$plotType <- 'plotCallgraph'
-    # mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
-        # visible(gg) <- TRUE
+    # mn$Plot[['Plot Callgraph']] <- gWidgets2::gaction('Plot Callgraph', handler=function(h,...){
+        # gWidgets2::visible(gg) <- TRUE
         # attr(win, 'env')$plotObj <- plotProfileCallGraph(filteredPD, style = google.style)
         # attr(win, 'env')$plotType <- 'plotCallgraph'
     # })
-    # mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
-        # visible(gg) <- TRUE
+    # mn$Plot[['Plot Tree Map']] <- gWidgets2::gaction('Plot Tree Map', handler=function(h,...){
+        # gWidgets2::visible(gg) <- TRUE
         # attr(win, 'env')$plotObj <- calleeTreeMap(filteredPD)
         # attr(win, 'env')$plotType <- 'plotTreemap'
     # })
-    # mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
-        # visible(gg) <- TRUE
+    # mn$Plot[['Plot Flame Graph']] <- gWidgets2::gaction('Plot Flame Graph', handler=function(h,...){
+        # gWidgets2::visible(gg) <- TRUE
         # attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="hot")
         # attr(win, 'env')$plotType <- 'plotFlamegraph'
     # })
-    # mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
-        # visible(gg) <- TRUE
+    # mn$Plot[['Plot Time Graph']] <- gWidgets2::gaction('Plot Time Graph', handler=function(h,...){
+        # gWidgets2::visible(gg) <- TRUE
         # attr(win, 'env')$plotObj <- flameGraph(filteredPD, order="time")
         # attr(win, 'env')$plotType <- 'plotTimegraph'
     # }) 
 
         # trying the below was problematic because 'menu' object exists by default
         # if(exists("menu", envir = attr(win, 'env')))
-        # svalue(attr(win, 'env')$menu) <- mn
+        # gWidgets2::svalue(attr(win, 'env')$menu) <- mn
     # if(exists("m", envir = attr(win, 'env')))
-        # svalue(attr(win, 'env')$m) <- mn
+        # gWidgets2::svalue(attr(win, 'env')$m) <- mn
     # else
         # attr(win, 'env')$m <- gmenu(mn, container=win)
 # }
@@ -373,16 +373,16 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                     srclines = TRUE, gc = TRUE, memory = FALSE, maxdepth=10, treeType, 
                     win, group, gg){
     browseStack <- function(h, ...){
-        stackBrowse <- gfile("Choose a Stack file", quote=FALSE, filter = 
+        stackBrowse <- gWidgets2::gfile("Choose a Stack file", quote=FALSE, filter = 
                              list("Stack files"=list(patterns=c("*.out", "*.txt"))))
         pd <- readProfileData(stackBrowse)
         stopIfEmpty(pd, group)
-        delete(win, group)
-        processWidget(pd, value, self, srclines, gc, memory, maxdepth, treeType, win)
+        gWidgets2::delete(win, group)
+        processWidget(pd, value, self, srclines, gc, memory, maxdepth, NULL, treeType, win)
     }
     
     browseR <- function(h, ...){
-        sourceBrowse <- gfile("Source and profile an R file", quote=FALSE,
+        sourceBrowse <- gWidgets2::gfile("Source and profile an R file", quote=FALSE,
                               filter = list("Stack files"=
                                             list(patterns=c("*.R", "*.txt"))))
         Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
@@ -390,65 +390,65 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         Rprof(NULL)
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
-        delete(win, group)
+        gWidgets2::delete(win, group)
         processWidget(filterProfileData(pd, focus = "source"), value, self,
-                      srclines, gc, memory, maxdepth, treeType, win)
+                      srclines, gc, memory, maxdepth, NULL, treeType, win)
         unlink(tmp)
     }    
     profileRCode <- function(h, ...){
         profileCode(pd, value, self, srclines, gc, memory, maxdepth, NULL, treeType, win, group)
     }    
     mn <- list(); mn$File <- list();
-    mn$File[['Select a stack file']] <- gaction("Select a stack file", 
+    mn$File[['Select a stack file']] <- gWidgets2::gaction("Select a stack file", 
                                                 handler=browseStack) 
-    mn$File[['Source an R file']] <- gaction("Source an R file", handler=browseR)   
-    mn$File[['Profile some R code']] <- gaction("Profile some R code", 
+    mn$File[['Source an R file']] <- gWidgets2::gaction("Source an R file", handler=browseR)   
+    mn$File[['Profile some R code']] <- gWidgets2::gaction("Profile some R code", 
                                                 handler=profileRCode) 
 
     mn$Plot <- list();
     attr(win, 'env')$plotType <- 'plotCallgraph'
-    mn$Plot[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=function(h,...){
-        visible(gg) <- TRUE
+    mn$Plot[['Plot Callgraph']] <- gWidgets2::gaction('Plot Callgraph', handler=function(h,...){
+        gWidgets2::visible(gg) <- TRUE
         attr(win, 'env')$plotObj <- plotProfileCallGraph(pd, style = google.style)
         attr(win, 'env')$plotType <- 'plotCallgraph'
     })
-    mn$Plot[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=function(h,...){
-        visible(gg) <- TRUE
+    mn$Plot[['Plot Tree Map']] <- gWidgets2::gaction('Plot Tree Map', handler=function(h,...){
+        gWidgets2::visible(gg) <- TRUE
         attr(win, 'env')$plotObj <- calleeTreeMap(pd)
         attr(win, 'env')$plotType <- 'plotTreemap'
     })
-    mn$Plot[['Plot Flame Graph']] <- gaction('Plot Flame Graph', handler=function(h,...){
-        visible(gg) <- TRUE
+    mn$Plot[['Plot Flame Graph']] <- gWidgets2::gaction('Plot Flame Graph', handler=function(h,...){
+        gWidgets2::visible(gg) <- TRUE
         attr(win, 'env')$plotObj <- flameGraph(pd, order="hot")
         attr(win, 'env')$plotType <- 'plotFlamegraph'
     })
-    mn$Plot[['Plot Time Graph']] <- gaction('Plot Time Graph', handler=function(h,...){
-        visible(gg) <- TRUE
+    mn$Plot[['Plot Time Graph']] <- gWidgets2::gaction('Plot Time Graph', handler=function(h,...){
+        gWidgets2::visible(gg) <- TRUE
         attr(win, 'env')$plotObj <- flameGraph(pd, order="time")
         attr(win, 'env')$plotType <- 'plotTimegraph'
     }) 
 
         # trying the below was problematic because 'menu' object exists by default
         # if(exists("menu", envir = attr(win, 'env')))
-        # svalue(attr(win, 'env')$menu) <- mn
+        # gWidgets2::svalue(attr(win, 'env')$menu) <- mn
     if(exists("m", envir = attr(win, 'env')))
-        svalue(attr(win, 'env')$m) <- mn
+        gWidgets2::svalue(attr(win, 'env')$m) <- mn
     else
-        attr(win, 'env')$m <- gmenu(mn, container=win)
+        attr(win, 'env')$m <- gWidgets2::gmenu(mn, container=win)
 }
 profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE, 
                         srclines = TRUE, gc = TRUE, memory = FALSE, maxdepth=10, interval,
                         treeType, win, group){
-    codeWindow <- gwindow("Profile R code", width=500, height=500)
-    codeGroup <- ggroup(horizontal=FALSE,container=codeWindow)
-    profileText <- gtext("## Enter some R code here to profile", 
+    codeWindow <- gWidgets2::gwindow("Profile R code", width=500, height=500)
+    codeGroup <- gWidgets2::ggroup(horizontal=FALSE,container=codeWindow)
+    profileText <- gWidgets2::gtext("## Enter some R code here to profile", 
                          container=codeGroup, wrap=FALSE, 
                          font.attr=list(family="monospace"), expand=TRUE, 
                          fill="both")
-    btn <- gbutton("Profile It", container=codeGroup)
-    addHandlerChanged(btn, handler = function(h, ...) {
+    btn <- gWidgets2::gbutton("Profile It", container=codeGroup)
+    gWidgets2::addHandlerChanged(btn, handler = function(h, ...) {
         tmp1 <- paste(tempfile(), ".R", sep="")
-        write(svalue(profileText), file=tmp1)
+        write(gWidgets2::svalue(profileText), file=tmp1)
         Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
         source(tmp1)
         Rprof(NULL)
@@ -456,8 +456,8 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         stopIfEmpty(pd, group)
         mydepth <- length(sys.calls())
         pd <- proftools::skipPD(pd, mydepth+4)
-        delete(win, group)
-        dispose(codeWindow)
+        gWidgets2::delete(win, group)
+        gWidgets2::dispose(codeWindow)
         processWidget(pd, value, self, srclines, gc, memory, maxdepth, NULL, treeType,
                       win)
     })
@@ -514,16 +514,16 @@ funSumTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     attr(win, 'env')$callSum <- fixSumDF(callSumDF, self, gc, value, memory)
     fcnSummary <- prepareFcnSummary(pd, byTotal = TRUE, value, srclines, gc, memory)
     attr(win, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory)
-    gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
-    g <- gpanedgroup(container=gPane)
-    treeCont <- gframe(text="Function Summary", container=g, expand=TRUE)
-    gg <- ggraphics(container=g, expand=TRUE)
-    svalue(g) <- .5
-    fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
+    gPane <- gWidgets2::gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
+    g <- gWidgets2::gpanedgroup(container=gPane)
+    treeCont <- gWidgets2::gframe(text="Function Summary", container=g, expand=TRUE)
+    gg <- gWidgets2::ggraphics(container=g, expand=TRUE)
+    gWidgets2::svalue(g) <- .5
+    fcnAnnotCont <- gWidgets2::gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
-    tree <- gtree(offspring=offspringFunSum, offspring.data = win,
+    tree <- gWidgets2::gtree(offspring=offspringFunSum, offspring.data = win,
                   container=treeCont, expand=TRUE, fill="both")
-    fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
+    fcnAnnot <- gWidgets2::gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
     addMenu(pd, value, self, srclines, gc, memory, maxdepth=10, treeType, win, group, gg)
@@ -536,17 +536,17 @@ hotPathsTree <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
                          maxnodes, dropBelow, trimCallgraph, win, group){
     treeType <- "hotPaths"
     attr(win, 'env')$offspringDF <- setOffspringDF(pd, value, self, srclines, gc, memory, maxdepth)
-    gPane <- gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
-    g <- gpanedgroup(container=gPane)
-    treeCont <- gframe(text="Hot Paths", container=g, expand=TRUE, 
+    gPane <- gWidgets2::gpanedgroup(horizontal=FALSE, container=group, expand=TRUE)
+    g <- gWidgets2::gpanedgroup(container=gPane)
+    treeCont <- gWidgets2::gframe(text="Hot Paths", container=g, expand=TRUE, 
                        fill="both")
-    gg <- ggraphics(container=g, expand=TRUE)
-    svalue(g) <- .5
-    fcnAnnotCont <- gframe(text="Function Annotations", container=gPane, 
+    gg <- gWidgets2::ggraphics(container=g, expand=TRUE)
+    gWidgets2::svalue(g) <- .5
+    fcnAnnotCont <- gWidgets2::gframe(text="Function Annotations", container=gPane, 
                            expand=TRUE, fill="both")
-    tree <- gtree(offspring = offspring, offspring.data = win, 
+    tree <- gWidgets2::gtree(offspring = offspring, offspring.data = win, 
                   container=treeCont, expand=TRUE, fill="both")
-    fcnAnnot <- gtext("", container=fcnAnnotCont, wrap=FALSE,
+    fcnAnnot <- gWidgets2::gtext("", container=fcnAnnotCont, wrap=FALSE,
                       font.attr=list(family="monospace"), expand=TRUE, 
                       fill="both")
     addMenu(pd, value, self, srclines, gc, memory, maxdepth=10, treeType, win, group, gg)
@@ -770,7 +770,7 @@ outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'
                                 paste(output, collapse='<br />'),
                                 '</span>',sep=''), sep='')
     else
-        insert(fcnAnnot, output, font.attr = font.attr, where = where)
+        gWidgets2::insert(fcnAnnot, output, font.attr = font.attr, where = where)
 }
 # annotName is the name along with possible line info, fcnName strips those
 functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName, 
@@ -883,10 +883,10 @@ parseLineInfo <- function(fcnName, srcAnnotate){
 addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                        dropBelow, trimCallgraph, gg, win){
     fcnNameRClick <- NULL
-    addHandlerClicked(tree, handler=function(h,...) {
-        visible(gg) <- TRUE
+    gWidgets2::addHandlerClicked(tree, handler=function(h,...) {
+        gWidgets2::visible(gg) <- TRUE
         fcnAnnot <- h$action
-        path <- svalue(h$obj, drop=FALSE)
+        path <- gWidgets2::svalue(h$obj, drop=FALSE)
         if(length(path) == 0){
             plotProfileCallGraph(pd, style = google.style)
             return(FALSE)
@@ -895,12 +895,12 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
         parseLine <- parseLineInfo(annotName, srcAnnotate)
         fcnNameRClick <<- parseLine$fcnName
         do.call(attr(win, 'env')$plotType, list())
-        svalue(fcnAnnot) <- ''
+        gWidgets2::svalue(fcnAnnot) <- ''
         functionAnnotate(parseLine$fcnName, annotName, path, 
                          srcAnnotate, parseLine$fileName, 
                          parseLine$lineNumber, treeType, fcnAnnot, win)
     }, action=fcnAnnot)
-    addHandlerClicked(gg, handler=function(h,...) {
+    gWidgets2::addHandlerClicked(gg, handler=function(h,...) {
         if(attr(win, 'env')$plotType != 'plotCallgraph'){
             p <- attr(win, 'env')$plotObj
             idx <- which(h$x >= p$left & h$x <= p$right &
@@ -924,8 +924,8 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
     plotCallgraph <- function(h, ...){
         filtered <- filterProfileData(pd, focus = fcnNameRClick)
         plotProfileCallGraph(filtered, style = google.style,
-                             maxnodes = svalue(maxnodes), 
-                             total.pct = svalue(dropBelow))
+                             maxnodes = gWidgets2::svalue(maxnodes), 
+                             total.pct = gWidgets2::svalue(dropBelow))
         attr(win, 'env')$plotType <- 'plotCallgraph'        
     }
     plotTreemap <- function(h, ...){
@@ -943,29 +943,29 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
         attr(win, 'env')$plotObj <- flameGraph(filtered, order="time")
         attr(win, 'env')$plotType <- 'plotTimegraph'        
     }
-    addHandlerClicked(trimCallgraph, plotCallgraph)
+    gWidgets2::addHandlerClicked(trimCallgraph, plotCallgraph)
     ml <- list()
-    ml[['Plot Callgraph']] <- gaction('Plot Callgraph', handler=plotCallgraph)
-    ml[['Plot Tree Map']] <- gaction('Plot Tree Map', handler=plotTreemap)    
-    ml[['Plot Flamegraph']] <- gaction('Plot Flamegraph', handler=plotFlamegraph)
-    ml[['Plot Timegraph']] <- gaction('Plot Timegraph', handler=plotTimegraph)    
-    addRightclickPopupMenu(tree,menulist=ml)
+    ml[['Plot Callgraph']] <- gWidgets2::gaction('Plot Callgraph', handler=plotCallgraph)
+    ml[['Plot Tree Map']] <- gWidgets2::gaction('Plot Tree Map', handler=plotTreemap)    
+    ml[['Plot Flamegraph']] <- gWidgets2::gaction('Plot Flamegraph', handler=plotFlamegraph)
+    ml[['Plot Timegraph']] <- gWidgets2::gaction('Plot Timegraph', handler=plotTimegraph)    
+    gWidgets2::addRightclickPopupMenu(tree,menulist=ml)
 }
 summaryHandler <- function(h, ...){
-    summaryView <- ifelse(svalue(h$obj) == "Function", "funSum", "hotPaths")
-    delete(h$action$win, h$action$group)
+    summaryView <- ifelse(gWidgets2::svalue(h$obj) == "Function", "funSum", "hotPaths")
+    gWidgets2::delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, h$action$self, h$action$srclines, 
                   h$action$gc,h$action$memory, h$action$maxdepth, h$action$interval, summaryView, h$action$win)
 }
 unitsHandler <- function(h, ...){
-    value <- svalue(h$obj)
-    delete(h$action$win, h$action$group)
+    value <- gWidgets2::svalue(h$obj)
+    gWidgets2::delete(h$action$win, h$action$group)
     processWidget(h$action$pd, value, h$action$self, h$action$srclines, 
                   h$action$gc, h$action$memory, h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 checkHandler <- function(h, ...){
-    self.gc <- c("self", "gc", "memory") %in% svalue(h$obj)
-    delete(h$action$win, h$action$group)
+    self.gc <- c("self", "gc", "memory") %in% gWidgets2::svalue(h$obj)
+    gWidgets2::delete(h$action$win, h$action$group)
     processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
                   self.gc[2], self.gc[3], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
