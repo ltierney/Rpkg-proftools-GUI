@@ -24,3 +24,9 @@ h2 {
 	margin-right:8px;
 	float:left;
 }
+.tipHide{
+    display: none;
+}
+.tipShow{
+    display: block;
+}

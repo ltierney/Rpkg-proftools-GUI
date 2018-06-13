@@ -20,7 +20,7 @@
   <link rel="stylesheet" type="text/css" href="shared/shiny.css"/> <link rel="stylesheet" type="text/css" href="styles/jquery.qtip.min.css"/> 
   <script>
   function formatMem(value,row,index){
-    return +parseFloat(value).toFixed(2);
+    return parseFloat(value).toFixed(2);
 }
  //$.getJSON( "/test.JSON", function( data ) {alert(data[1].id)});
 window.onbeforeunload = function(e) {
@@ -40,7 +40,15 @@ $(document).ready(function() {
         text: 'nothing yet'
     }
     });
-    $('#plot').mousemove(function( event ) { $('#plot').qtip('option', 'content.text', $('#labelObj').text())})
+   $('#plot').mousemove(function( event ) {  
+        alert($('select[name = "plotType"]').val());
+        if($('select[name = "plotType"]').val() != "plotCallgraph") {
+            $('#plot').qtip('option', 'content.text', $('#labelObj').text());
+            $('#plot').qtip('option', 'style.classes', "tipShow");
+            }
+        else
+            $('#plot').qtip('option', 'style.classes', "tipHide");
+            })
 function filter10( value, type ){
 	return value % 10 ? 1 : 0;
 }
@@ -393,7 +401,7 @@ function makeTrees(){
     <li class='tab'><a href="#tabs1-hotpaths">Hot Paths</a></li>
   </ul> 
   <br /> 
-	Plot Type: <select name="plotType">
+	Plot Type: <select id="plotTyp" name="plotType">
   <option value="plotCallgraph" selected>Callgraph</option>
   <option value="plotTreemap">Tree Map</option>
   <option value="plotFlamegraph">Flame Graph</option>
@@ -427,13 +435,13 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 		<thead>
 <tr> 
 <th field="Function" width="220">Name</th>
-<th field="total" sortable="true" width="100">Total</th>
+<th field="total" sortable="true" width="100" align="right">Total</th>
 
-<th field="self" width="100">Self</th>
-<th field="GC" width="100">GC</th>
-<th field="GC.Self" width="100">GC.Self</th>
-<th field="alloc" formatter="formatMem" width="100">Alloc</th>
-<th field="allocself" formatter="formatMem" width="100">Alloc.Self</th>
+<th field="self" formatter="formatMem" width="100" align="right">Self</th>
+<th field="GC" width="100" align="right">GC</th>
+<th field="GC.Self" width="100" align="right">GC.Self</th>
+<th field="alloc" formatter="formatMem" width="100" align="right">Alloc</th>
+<th field="allocself" formatter="formatMem" width="100" align="right">Alloc.Self</th>
 
 </tr>
 		</thead></table>
@@ -451,13 +459,13 @@ Drop Below: <input type="text" id="dropBelow" name="dropBelow" value="0"/>
 		<thead>
 <tr> 
 <th field="Function" width="220">Name</th>
-<th field="total" width="100">Total</th>
+<th field="total" width="100" align="right">Total</th>
 
-<th field="self" width="100">Self</th>
-<th field="GC" width="100">GC</th>
-<th field="GC.Self" width="100">GC.Self</th>
-<th field="alloc" formatter="formatMem" width="100">Alloc</th>
-<th field="allocself" formatter="formatMem" width="100">Alloc.Self</th>
+<th field="self" width="100" align="right">Self</th>
+<th field="GC" width="100" align="right">GC</th>
+<th field="GC.Self" width="100" align="right">GC.Self</th>
+<th field="alloc" formatter="formatMem" width="100" align="right">Alloc</th>
+<th field="allocself" formatter="formatMem" width="100" align="right">Alloc.Self</th>
 
 </tr>
 		</thead>
