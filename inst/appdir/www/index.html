@@ -40,14 +40,22 @@ $(document).ready(function() {
         text: 'nothing yet'
     }
     });
-   $('#plot').mousemove(function( event ) {  
-        alert($('select[name = "plotType"]').val());
+    
+$('select[name = "plotType"]').change(function() {
+        if($(this).val() == "plotCallgraph") 
+            $('#trimCallgraph').removeClass("tipHide");
+        else
+            $('#trimCallgraph').addClass("tipHide");
+});
+
+$('#plot').mousemove(function( event ) {  
         if($('select[name = "plotType"]').val() != "plotCallgraph") {
             $('#plot').qtip('option', 'content.text', $('#labelObj').text());
-            $('#plot').qtip('option', 'style.classes', "tipShow");
+            $('#qtip-0').removeClass("tipHide");
+
             }
         else
-            $('#plot').qtip('option', 'style.classes', "tipHide");
+            $('#qtip-0').addClass("tipHide");
             })
 function filter10( value, type ){
 	return value % 10 ? 1 : 0;
@@ -401,7 +409,7 @@ function makeTrees(){
     <li class='tab'><a href="#tabs1-hotpaths">Hot Paths</a></li>
   </ul> 
   <br /> 
-	Plot Type: <select id="plotTyp" name="plotType">
+	Plot Type: <select name="plotType">
   <option value="plotCallgraph" selected>Callgraph</option>
   <option value="plotTreemap">Tree Map</option>
   <option value="plotFlamegraph">Flame Graph</option>

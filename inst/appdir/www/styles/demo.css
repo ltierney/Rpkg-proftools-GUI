@@ -25,7 +25,7 @@ h2 {
 	float:left;
 }
 .tipHide{
-    display: none;
+    display: none !important;
 }
 .tipShow{
     display: block;

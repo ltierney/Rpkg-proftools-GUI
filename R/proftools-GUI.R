@@ -1166,16 +1166,18 @@ myShiny <- function(input, output, session) {
 
 GUIGadget <- function(){
     path <- system.file("appdir", package="proftoolsGUI")
-    if(.Platform$OS.type == 'unix'){
-        profDir <- '~/.rstudio-desktop/profiles-cache/'
-    } 
-    else {
-        profDir <- paste0('C:\\Users\\', Sys.getenv("USERNAME"), '\\AppData\\Local\\RStudio-Desktop\\profiles-cache')
-    }
-    details = file.info(paste0(profDir, .Platform$file.sep, list.files(profDir,pattern="*.Rprof")))
-    details = details[with(details, order(as.POSIXct(mtime), decreasing = TRUE)), ]
-    files = rownames(details)
-    if(length(files) > 0){
+    # if(.Platform$OS.type == 'unix'){
+        # profDir <- '~/.rstudio-desktop/profiles-cache/'
+    # } 
+    # else {
+        # profDir <- paste0(Sys.getenv("USERPROFILE"), '\\AppData\\Local\\RStudio-Desktop\\profiles-cache')
+    # }
+    profDir <- options("profvis.prof_output")$profvis.prof_output
+    stackFiles <- list.files(profDir,pattern="*.Rprof")
+    if(length(stackFiles) > 0){
+        details = file.info(paste0(profDir, .Platform$file.sep, stackFiles))
+        details = details[with(details, order(as.POSIXct(mtime), decreasing = TRUE)), ]
+        files = rownames(details)
         files <- files[1]
         pd <- readProfileData(files)
     }
