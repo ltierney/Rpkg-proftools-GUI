@@ -214,7 +214,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         units <- gWidgets2::gcombobox(c(value[1], "pct", "time", "hits"), container=buttonCont, 
                            handler=unitsHandler, action=passedList)
         gWidgets2::size(units) <- c(50, -1)
-        checkBoxes <- c("self", "gc", "memory"); checked=c(self,gc,memory)
+        checkBoxes <- c("self", "gc", "memory", "srclines"); checked=c(self,gc,memory,srclines)
         if(!pd$haveGC){
             checkBoxes <- checkBoxes[-2]
             checked <- checked[-2]
@@ -489,6 +489,7 @@ prepareCallSum <- function(pd, byTotal = TRUE, value, srclines, gc, memory){
 
 prepareFcnSummary <- function(pd, byTotal = TRUE, value, srclines, gc, memory){
     fcnSumm <- format(funSummary(pd, byTotal = TRUE, value, srclines, gc, memory))
+    fcnSumm[,1] <- trimws(fcnSumm[,1])
     names(fcnSumm)[1] <- "fun"
     fcnSumm
     # fcnSummary <- data.frame(row.names = 1:nrow(fcnSumm))
@@ -964,9 +965,9 @@ unitsHandler <- function(h, ...){
                   h$action$gc, h$action$memory, h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 checkHandler <- function(h, ...){
-    self.gc <- c("self", "gc", "memory") %in% gWidgets2::svalue(h$obj)
+    self.gc <- c("self", "gc", "memory", "srclines") %in% gWidgets2::svalue(h$obj)
     gWidgets2::delete(h$action$win, h$action$group)
-    processWidget(h$action$pd, h$action$value, self.gc[1], h$action$srclines,
+    processWidget(h$action$pd, h$action$value, self.gc[1], self.gc[4],
                   self.gc[2], self.gc[3], h$action$maxdepth, h$action$interval, h$action$treeType, h$action$win)
 }
 file.choose2 <- function(...) {
@@ -1024,19 +1025,21 @@ myShiny <- function(input, output, session) {
             gc <- arg[[2]]
             memory <- arg[[3]]
             value <- arg[[4]]
+            srclines <- TRUE
         }
         else{
             self <- input$self
             gc <- input$gc
             memory <- input$memory
             value <- input$value
+            srclines <- ifelse(input$srcLines==1, TRUE, FALSE)
         }
         attr(winHotpaths, 'env') <- attr(winFunsum, 'env') <- new.env()
         attr(winHotpaths, 'env')$self.gc <- attr(winFunsum, 'env')$self.gc <- c(self, gc, memory)
-        attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, value, self, srclines=TRUE, gc, memory, maxdepth=10)
-        callSumDF <- prepareCallSum(filteredPD, byTotal = TRUE, value, srclines=TRUE, gc, memory)
+        attr(winHotpaths, 'env')$offspringDF <- setOffspringDF(filteredPD, value, self, srclines=srclines, gc, memory, maxdepth=10)
+        callSumDF <- prepareCallSum(filteredPD, byTotal = TRUE, value, srclines=srclines, gc, memory)
         attr(winFunsum, 'env')$callSum <- fixSumDF(callSumDF, self, gc, value, memory)
-        fcnSummary <- prepareFcnSummary(filteredPD, byTotal = TRUE, value, srclines=TRUE, gc, memory)
+        fcnSummary <- prepareFcnSummary(filteredPD, byTotal = TRUE, value, srclines=srclines, gc, memory)
         attr(winFunsum, 'env')$fcnSummary <- fixSumDF(fcnSummary, self, gc, value, memory) 
         list(winHotpaths = winHotpaths, winFunsum = winFunsum)
     })
