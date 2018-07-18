@@ -121,7 +121,7 @@ function makeFunsum(){
                             $("#fcnName").val(path);
                             Shiny.bindAll();
                         }
-                    }//,
+                    }
                     //onLoadSuccess: function(row, data) {$('#funsum').treegrid('collapseAll');}
                 });
     hideShowCols();
@@ -174,7 +174,19 @@ function makeHotpaths(){
                             $("#fcnName").val(path);
                             Shiny.bindAll();
                         }
-                    }
+                    },
+                    onExpand: function(row){
+                        nData = $('#hotpaths').treegrid('find', row.id);
+                        children = nData.children;
+                        arrLen = children.length;
+                        while(arrLen == 1){
+                            $('#hotpaths').treegrid('expand', children[0].id);
+                            nData = $('#hotpaths').treegrid('find', children[0].id);
+                            children = nData.children;
+                            arrLen = children.length;
+                        }
+                    
+                    }//,
                 });
     hideShowCols();
 /*    setTimeout(
