@@ -311,6 +311,8 @@ Shiny.addCustomMessageHandler("have",
             $('#gc').prop('checked', true);        
         if(message.memory)
             $('#memory').prop('checked', true);
+        if(message.srclines)
+            $('#srcLines').prop('checked', true);
         if(!message.haveGC)
             $("#haveGC").hide();
         if(!message.haveMem)

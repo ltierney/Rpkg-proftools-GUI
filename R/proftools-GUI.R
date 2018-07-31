@@ -243,7 +243,7 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
         else filteredPD <- pd
         srcAnnotate <- attemptAnnot(filteredPD, value, gc, show=FALSE); conf <- FALSE
         if(is.null(srcAnnotate))
-            conf <- gconfirm(paste0('Could not find source files in the ',
+            conf <- gWidgets2::gconfirm(paste0('Could not find source files in the ',
                                     'working directory, press OK to locate the', 
                                     ' directory with source files, or Cancel',
                                     ' to continue without source annotations.'), 
@@ -260,9 +260,9 @@ processWidget <- function(pd, value = c("pct", "time", "hits"),
             hotPathsTree(filteredPD, value, self, srclines, gc, memory, maxdepth, 
                          srcAnnotate, maxnodes, dropBelow, trimCallgraph, win, 
                          group)
-        update(win)
+        stats::update(win)
     }
-    plot.new()
+    graphics::plot.new()
     plotProfileCallGraph(pd, style = google.style, maxnodes = gWidgets2::svalue(maxnodes),
                          total.pct = gWidgets2::svalue(dropBelow))
 }
@@ -385,9 +385,9 @@ addMenu <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         sourceBrowse <- gWidgets2::gfile("Source and profile an R file", quote=FALSE,
                               filter = list("Stack files"=
                                             list(patterns=c("*.R", "*.txt"))))
-        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
+        utils::Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
         source(sourceBrowse)
-        Rprof(NULL)
+        utils::Rprof(NULL)
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         gWidgets2::delete(win, group)
@@ -449,9 +449,9 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
     gWidgets2::addHandlerChanged(btn, handler = function(h, ...) {
         tmp1 <- paste(tempfile(), ".R", sep="")
         write(gWidgets2::svalue(profileText), file=tmp1)
-        Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
+        utils::Rprof(tmp <- tempfile(), gc.profiling = TRUE, line.profiling = TRUE, memory.profiling = memory)
         source(tmp1)
-        Rprof(NULL)
+        utils::Rprof(NULL)
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         mydepth <- length(sys.calls())
@@ -465,7 +465,7 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
 # Give an error message if stack file is empty
 stopIfEmpty <- function(pd, group){
     if(pd$total == 0){
-        gmessage('Your code produced a stack file of zero lines', title = "Error", 
+        gWidgets2::gmessage('Your code produced a stack file of zero lines', title = "Error", 
                  icon = "error", parent=group)
         stop('Your code produced a stack file of zero lines')         
     }
@@ -678,8 +678,8 @@ runShiny <- function(pd, value = c("pct", "time", "hits"),
     
     pd$files <- normalizePath(pd$files)
     shinyPD(pd)
-    arg(list(self, gc, memory, value))
-    srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
+    arg(list(self, gc, memory, value, srclines))
+    # srcAnnotate <<- annotateSource(pd, value, gc, show=FALSE)
     # cols <- c("<th field=\"self\" width=\"150\">Self</th>",
               # "<th field=\"GC\" width=\"150\">GC</th>",
               # "<th field=\"GCself\" width=\"150\">GC.Self</th>")
@@ -724,8 +724,8 @@ prepareShiny <- function(pd, value = c("pct", "time", "hits"),
     
     pd$files <- normalizePath(pd$files)
     shinyPD(pd)
-    arg(list(self, gc, memory, value))
-    srcAnnotate <<- attemptAnnot(pd, value, gc, show=FALSE)
+    arg(list(self, gc, memory, value, srclines))
+    # srcAnnotate <<- attemptAnnot(pd, value, gc, show=FALSE)
     # cols <- c("<th field=\"self\" width=\"150\">Self</th>",
               # "<th field=\"GC\" width=\"150\">GC</th>",
               # "<th field=\"GCself\" width=\"150\">GC.Self</th>")
@@ -777,7 +777,7 @@ outputAnnot <- function(output, fcnAnnot = NULL, font.attr = NULL, where = 'end'
 functionAnnotate <- function(fcnName, annotName, path, srcAnnotate, fileName, 
                              lineNumber, treeType, fcnAnnot, win){
     ## fileName used in Shiny
-    fileName <<- NULL
+    # fileName <<- NULL
     if(is.null(srcAnnotate)) {
         outputAnnot("R file could not be found in the working directory", fcnAnnot)
         return()
@@ -1015,6 +1015,7 @@ myShiny <- function(input, output, session) {
                                                  gc = as.numeric(arg[[2]]),
                                                  memory = as.numeric(arg[[3]]),
                                                  value = arg[[4]],
+                                                 srclines = arg[[5]],
                                                  total = pd$total))
     })
     dataInput <- shiny::reactive({
@@ -1025,7 +1026,7 @@ myShiny <- function(input, output, session) {
             gc <- arg[[2]]
             memory <- arg[[3]]
             value <- arg[[4]]
-            srclines <- TRUE
+            srclines <- arg[[5]]
         }
         else{
             self <- input$self
