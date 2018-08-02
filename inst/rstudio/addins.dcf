@@ -1,4 +1,9 @@
 Name: Proftools-GUI
-Description: filler
+Description: Shiny GUI for examining profile data.
 Binding: GUIGadget
+Interactive: true
+
+Name: CacheGrind
+Description: Examine Profile Data with kcachegrind or qcachegrind.
+Binding: cacheGrindRStudio
 Interactive: false
