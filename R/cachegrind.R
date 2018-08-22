@@ -4,7 +4,7 @@ cacheGrind <- function(pd) {
                  warning = function(w) NULL)
     cmd <- getCmd("kcachegrind")
     if (! is.character(cmd))
-        cmd <- getCMD("qcachegrind")
+        cmd <- getCmd("qcachegrind")
     if (! is.character(cmd))
         stop("neither 'kcachegrind' nor 'qcachecrind' is available")
     fname <- tempfile()
