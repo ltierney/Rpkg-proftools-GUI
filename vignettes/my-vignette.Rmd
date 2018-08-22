@@ -1,8 +1,8 @@
 ---
 title: "Proftools-GUI"
 author: 
-- "Luke Tierney"
 - "Riad Jarjour"
+- "Luke Tierney"
 output: pdf_document
 vignette: >
   %\VignetteIndexEntry{Vignette Title}
@@ -25,9 +25,9 @@ We can start by loading an example stack file:
 
 ## Shiny
 
-We first illustrate the package use in Shiny. The `startGUI` function launches the UI with a set of initial options.
+We first illustrate the package use in Shiny. The `proftoolsGUI` function launches the UI with a set of initial options.
 
-`startGUI(pd, method = "shiny", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)`
+`proftoolsGUI(pd, method = "shiny", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)`
 
 ![Initial View For Shiny](1.png)
 
@@ -62,7 +62,7 @@ We can also adjust the slider to focus on the selected time period. This adjusts
 
 Alternatively we can use the gWidgets package to perform the same operations
 
-`startGUI(pd, method = "gwidgets", value = "pct", gc=TRUE, self= TRUE, memory=TRUE)`
+`proftoolsGUI(pd, method = "gwidgets", value = "pct", gc=TRUE, self= TRUE, memory=TRUE)`
 
 
 ![gWidgets Example](5.png)

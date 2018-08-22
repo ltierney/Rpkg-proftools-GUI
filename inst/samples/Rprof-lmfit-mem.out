@@ -1,6 +1,6 @@
 memory profiling: GC profiling: line profiling: sample.interval=20000
 :927123:169401188:119961912:77:"file" "source" 
-#File 1: C:\Users\Big-Rod\Documents\stacks\lmfit.R
+#File 1: lmfit.R
 :927436:169402595:120021944:53:"<GC>" "rnorm" 1#1 "eval" "eval" "withVisible" "source" 
 :927436:152625381:120021944:0:"<GC>" "rnorm" 1#1 "eval" "eval" "withVisible" "source" 
 :926805:169401195:119932232:0:"rnorm" 1#1 "eval" "eval" "withVisible" "source" 
@@ -103,7 +103,7 @@ memory profiling: GC profiling: line profiling: sample.interval=20000
 :926490:51959848:119913472:0:"<GC>" "gc" "system.time" 1#4 "eval" "eval" "withVisible" "source" 
 :926490:51959848:119913472:0:"<GC>" "gc" "system.time" 1#4 "eval" "eval" "withVisible" "source" 
 :928113:51960380:120393000:150:"cb$putcode" "cmpConst" "cmp" "h" "tryInline" "cmpCall" "cmp" "genCode" "compile" "doTryCatch" "tryCatchOne" "tryCatchList" "tryCatch" "compiler:::tryCompile" "system.time" 1#4 "eval" "eval" "withVisible" "source" 
-#File 2: C:\Users\Big-Rod\Documents\stacks\lmsrc.R
+#File 2: lmsrc.R
 :929256:51960715:120583288:103:2#30 "lm.fit" "system.time" 1#4 "eval" "eval" "withVisible" "source" 
 :929256:51960715:120583288:0:2#30 "lm.fit" "system.time" 1#4 "eval" "eval" "withVisible" "source" 
 :929256:51960715:120583288:0:2#30 "lm.fit" "system.time" 1#4 "eval" "eval" "withVisible" "source" 

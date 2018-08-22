@@ -3,9 +3,9 @@ Type: Package
 Title: A Graphical User Interface for Examining R Profile Output
 Version: 1.0
 Date: 2014-03-07
-Author: Luke Tierney and Riad Jarjour
+Author: Riad Jarjour and Luke Tierney
 Maintainer: Luke Tierney <luke-tierney@uiowa.edu>
-Description: Provides a GUI for the proftools package
+Description: Provides a GUI for the proftools package.
 License: GPL
 Suggests: knitr,
     rmarkdown, gWidgets2, shiny

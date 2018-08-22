@@ -1,4 +1,2 @@
 export(proftoolsGUI)
-export(GUIGadget)
-export(myShiny)
 import(proftools)

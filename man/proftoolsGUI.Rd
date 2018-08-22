@@ -1,5 +1,5 @@
-\name{startWidget}
-\alias{startWidget}
+\name{proftoolsGUI}
+\alias{proftoolsGUI}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
 Start Widget for proftools-GUI
@@ -9,9 +9,9 @@ Launches a GUI widget with interactive profiling tools for Rprof output,
 .R files, and R code.
 }
 \usage{
-startGUI(pd = NULL, method = c("gwidgets", "shiny"),
-         value = c("pct", "time", "hits"), self = FALSE, 
-         gc = TRUE, memory = FALSE, srclines = TRUE)
+proftoolsGUI(pd = NULL, method = c("gwidgets", "shiny"),
+             value = c("pct", "time", "hits"), self = FALSE, 
+             gc = TRUE, memory = FALSE, srclines = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -30,7 +30,7 @@ startGUI(pd = NULL, method = c("gwidgets", "shiny"),
   \item{gc}{
  logical; include GC information or not.
 }
-  \item{gc}{
+  \item{memory}{
  logical; include memory information or not.
 }
   \item{srclines}{
@@ -81,13 +81,13 @@ library(gWidgets2RGtk2)
 library(shiny)
 
 ## Read the profile data from the stack file 
-pd <- readProfileData(system.file("samples", "Rprof-lmfit-mem.out", package = "proftools-GUI"))
+pd <- readProfileData(system.file("samples", "Rprof-lmfit-mem.out", package = "proftoolsGUI"))
 
 ## Start the GUI using shiny 
-startGUI(pd, method = "shiny", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)
+proftoolsGUI(pd, method = "shiny", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)
 
 ## Start the GUI using gWidgets
-startGUI(pd, method = "gwidgets", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)
+proftoolsGUI(pd, method = "gwidgets", value = "pct", gc=TRUE, self= FALSE, memory=TRUE)
 
 }
 }

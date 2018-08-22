@@ -7,17 +7,15 @@ features include call trees, function summaries and source annotations.
 The widget is interactive, giving the user the capability to alter viewing 
 options and use plotting tools from within the widget.
 
-Note: This package requires the proftools and gWidgets2 packages. It also 
-requires one of gWidgets2RGtk2 or gWidgets2tcltk packages to be used as the 
-underlying toolkit, with gWidgets2RGtk2 being preferred.
-
+Note: This package requires the proftools package. There are two versions for the GUI. 
+One uses the gWidgets2 and gWidgets2RGtk2 packages, while the other uses Shiny.
 
 EXPORTED FUNCTIONS
 
 The package exports one function:
 
-    startWidget launches a GUI widget with interactive profiling tools for 
-        Rprof output, .R files, and R code.
+    proftoolsGUI launches a GUI widget with interactive profiling tools for 
+        Rprof output.
         
         
 A SIMPLE EXAMPLE
@@ -28,28 +26,28 @@ Load required packages
         library(gWidgets2)
         library(gWidgets2RGtk2)
 
-Read in the profile data for the example in the proftools package
+Read in the profile data for the example in the proftools package and use the Shiny GUI
         
-        pd <- readProfileData(system.file("samples", "Rprof-rec.out",
-                                          package="proftools"))
-        startWidget(pd)
+        pd <- readProfileData(system.file("samples", "Rprof-lmfit-mem.out",
+                                          package="proftoolsGUI"))
+        proftoolsGUI(pd, method = "shiny")
 
-Alternatively, just launch the widget and use the file menu to browse 
+Alternatively, if you are using gWidgets2, just launch the widget and use the file menu to browse 
 and select the stack file. You can alter viewing options from witing the 
 widget rather than specifying the arguments when calling the function.
 
-        startWidget(NULL)
+        proftoolsGUI(NULL, method = "gwidgets")
         
 Note that source annotations are not shown. This is because the source 
-filenames given in Rprof-rec.out cannot be found in the working directory. 
+filenames given in Rprof-rec-mem.out cannot be found in the working directory. 
 We can fix this by temporarily changing the working directory to the samples 
-directory in the proftools package.
+directory in the proftoolsGUI package.
 
         oldDir <- getwd()
-        setwd(system.file("samples", package="proftools"))
+        setwd(system.file("samples", package="proftoolsGUI"))
         pd <- readProfileData(system.file("samples", "Rprof-lmfit.out", 
-                                          package="proftools"))
-        startWidget(pd)
+                                          package="proftoolsGUI"))
+        proftoolsGUI(pd)
         
 When done working with the widget, change the working directory back to the 
 original one.

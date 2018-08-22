@@ -1,4 +1,4 @@
 library(shiny)
 
 
-shinyServer(proftoolsGUI::myShiny)
+shinyServer(proftoolsGUI:::myShiny)

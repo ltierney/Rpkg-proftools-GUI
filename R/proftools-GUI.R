@@ -455,7 +455,7 @@ profileCode <- function(pd, value = c("pct", "time", "hits"), self = FALSE,
         pd <- readProfileData(tmp)
         stopIfEmpty(pd, group)
         mydepth <- length(sys.calls())
-        pd <- proftools::skipPD(pd, mydepth+4)
+        pd <- proftools:::skipPD(pd, mydepth+4)
         gWidgets2::delete(win, group)
         gWidgets2::dispose(codeWindow)
         processWidget(pd, value, self, srclines, gc, memory, maxdepth, NULL, treeType,
@@ -733,7 +733,7 @@ prepareShiny <- function(pd, value = c("pct", "time", "hits"),
         # cols[2:3] <- ""
     # if(!self)
         # cols[c(1,3)] <- ""
-    path <- system.file("appdir", package="proftoolsGUI")
+    # path <- system.file("appdir", package="proftoolsGUI")
     #path <- "C:/Users/Big-Rod/Documents/GitHub/Rpkg-proftools-GUI/inst/appdir"
     # index <- readLines(file.path(path, "www", "index.html"))
     # index[288] <- paste0('  <option value="', value, '" selected>', value, '</option>')
@@ -911,13 +911,13 @@ addHandlers <- function(tree, fcnAnnot, treeType, srcAnnotate, pd, maxnodes,
                     # we skip the first element because it's empty
                     len <- length(p$label[idx])
                     if(len < 12)
-                        tooltip(h$obj) <- p$label[idx][-1]
+                        gWidgets2::tooltip(h$obj) <- p$label[idx][-1]
                     else
-                        tooltip(h$obj) <- c(p$label[idx][2:6], "...",
+                        gWidgets2::tooltip(h$obj) <- c(p$label[idx][2:6], "...",
                                             p$label[idx][(len-4):len])
                 }
                 else
-                    tooltip(h$obj) <- p$label[idx]
+                    gWidgets2::tooltip(h$obj) <- p$label[idx]
         }
         
 
@@ -1180,7 +1180,7 @@ GUIGadget <- function(){
     stackFiles <- list.files(profDir,pattern="*.Rprof")
     if(length(stackFiles) > 0){
         details = file.info(paste0(profDir, .Platform$file.sep, stackFiles))
-        details = details[with(details, order(as.POSIXct(mtime), decreasing = TRUE)), ]
+        details = details[order(as.POSIXct(details$mtime), decreasing = TRUE), ]
         files = rownames(details)
         files <- files[1]
         pd <- readProfileData(files)
